@@ -1,0 +1,1 @@
+Quick and dirty addon for a ranged swing bar.

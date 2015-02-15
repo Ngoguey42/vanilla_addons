@@ -1,0 +1,62 @@
+﻿<Ui xmlns="http://www.blizzard.com/wow/ui/" 
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+xsi:schemaLocation="http://www.blizzard.com/wow/ui/ 
+..\..\FrameXML\UI.xsd">
+
+<Script file="ngorswing.lua"/>
+<!-- MyFrameCustomFrames -->
+	<Frame name="ngorswing" frameStrata="high" enableMouse="true" movable="true" parent="UIParent">
+<!-- Scripts -->
+		<Scripts>
+			<OnLoad>
+			ngorswing_onload();
+			</OnLoad>
+			<OnEvent>ngorswing_onevent(event, arg1, arg2);</OnEvent>
+		</Scripts>
+<!-- Backdrops -->
+		<Backdrop bgFile="Interface\ChatFrame\ChatFrameBackground" tile="false">
+		</Backdrop>
+<!-- Frames -->
+	<Frames>
+
+		
+      <!--       <StatusBar name="customSwingBar" hidden="true">
+        <Size>
+          <AbsDimension x="370" y="20"/>
+        </Size>
+        <Anchors>
+          <Anchor point="TOPLEFT">
+            <Offset>
+              <AbsDimension x="-920" y="462"/>
+            </Offset>
+          </Anchor>
+        </Anchors>
+
+        <BarTexture file="Interface\TargetingFrame\UI-StatusBar"/>
+        <BarColor r="1.0" g="0.7" b="0.0" a="0.5"/>
+
+		
+      </StatusBar>
+		 -->
+		
+		<StatusBar name="$parentbar" enableMouse="false" frameStrata="LOW">
+			<Scripts> <OnLoad>
+				ngorswing_setDoubleParentKey(this, this:GetParent())
+				this:SetParent(UIParent);
+				this:SetFrameStrata("HIGH");
+			</OnLoad> </Scripts>
+			<!-- <Backdrop bgFile="Interface\ChatFrame\ChatFrameBackground" tile="false"/> -->
+			<Layers>
+				<Layer frameStrata="DIALOG">
+						<FontString name="$parentt" inherits="GameFontNormalLarge" maxLines = "1" SetAllPoints="true"/>
+				</Layer>
+			</Layers>
+			<BarTexture file="Interface\TargetingFrame\UI-StatusBar"/>
+			<BarColor r="0.1" g="0.7" b="0.0" a="0.6"/>
+		</StatusBar>
+	</Frames>
+		
+		<Size x="0" y="0" />
+	</Frame>
+
+</Ui>
