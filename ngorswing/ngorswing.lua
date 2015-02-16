@@ -6,6 +6,7 @@ local framewidth = 272
 	------------------------------------------------
 	----------------	VARIABLES	----------------
 	------------------------------------------------
+local autorepeat_status;
 local self
 local prevswing
 local tab = {
@@ -31,13 +32,25 @@ local function setframesmeta()
 	-- })
 	self.f.bar:SetWidth(framewidth);
 	self.f.bar:SetHeight(18);
+
 	-- self.f.bar:SetAlpha(0.45);
+	
+	-- for k, v in pairs (self.f.bar) do
+		-- print(tostring(k).."("..tostring(v)..")");
+	-- end
+	
 	return ;
 end
 
 local function settextfuncs()
-
-	
+	function self:SetAutorepeatStateON()
+		autorepeat_status = true;
+		self.f.bar:SetStatusBarColor(0.1, 0.7, 0., 0.6);
+	end
+	function self:SetAutorepeatStateOFF()
+		autorepeat_status = false;
+		self.f.bar:SetStatusBarColor(0.7, 0.1, 0., 0.6);
+	end
 end
 
 local function setfuncs()
@@ -67,10 +80,12 @@ function ngorswing_onload()
 end
 
 local function onPLAYER_ENTERING_WORLD()
-	self:UnregisterEvent("PLAYER_ENTERING_WORLD")
+	self:UnregisterEvent("PLAYER_ENTERING_WORLD");
 	prevswing = GetTime();
 	self:SetScript("OnUpdate", onupdate);
 	self:Show();
+	autorepeat_status = false;
+	self:SetAutorepeatStateOFF();
 	-- for k, v in pairs (self.f.bg) do
 		-- print(tostring(k).."("..tostring(v)..")");
 	-- end
@@ -139,4 +154,14 @@ end
 function onupdate()
 	self.f.bar:SetMinMaxValues(prevswing, prevswing + UnitRangedDamage("player"));
 	self.f.bar:SetValue(GetTime())
+	if (IsAutoRepeatAction(26)) then
+		if (not autorepeat_status) then
+			self:SetAutorepeatStateON()
+		end
+	else
+		if (autorepeat_status) then
+			self:SetAutorepeatStateOFF()
+		end
+	end
+	
 end
