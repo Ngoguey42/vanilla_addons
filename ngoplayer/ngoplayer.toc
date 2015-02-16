@@ -1,0 +1,6 @@
+## Interface: 50001
+## Author: ngo
+## Title: ngoplayer
+## Notes: ngoplayer
+## Version : 0.1.0
+ngoplayer.xml

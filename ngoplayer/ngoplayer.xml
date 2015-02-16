@@ -1,0 +1,145 @@
+﻿<Ui xmlns="http://www.blizzard.com/wow/ui/"
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+xsi:schemaLocation="http://www.blizzard.com/wow/ui/
+..\..\FrameXML\UI.xsd">
+
+<Script file="ngoplayer.lua"/>
+
+<!-- EnvFrames -->
+<Frame name="ngoplayer" frameStrata="high" enableMouse="true" movable="true" parent="UIParent">
+	<!-- Scripts -->
+	<Scripts>
+		<OnLoad>
+		ngoplayer_onload();
+		</OnLoad>
+		<OnEvent>ngoplayer_onevent(event, arg1, arg2);</OnEvent>
+	</Scripts>
+	<!-- Backdrops -->
+	<Backdrop bgFile="Interface\ChatFrame\ChatFrameBackground" tile="false">
+	</Backdrop>
+	<!-- Frames -->
+	<Frames>
+		<!-- hp absolute -->
+		<Frame name="$parenthpa" enableMouse="false" frameStrata="HIGH">
+			<Scripts> <OnLoad>
+				ngoplayer_setDoubleParentKey(this, this:GetParent())
+				this:SetParent(PlayerFrame);
+				this:SetFrameStrata("HIGH");
+			</OnLoad> </Scripts>
+			<Size x="140" y="20" />
+			<Layers>
+				<Layer frameStrata="DIALOG">
+					<FontString name="$parentt" inherits="GameFontNormalLarge" maxLines = "1" SetAllPoints="true"/>
+				</Layer>
+			</Layers>
+		</Frame>
+
+		<!-- hp percent -->
+		<Frame name="$parenthpp" enableMouse="false" frameStrata="HIGH">
+			<Scripts> <OnLoad>
+				ngoplayer_setDoubleParentKey(this, this:GetParent())
+				this:SetParent(PlayerFrame);
+				this:SetFrameStrata("HIGH");
+			</OnLoad> </Scripts>
+			<Size x="140" y="20" />
+			<Layers>
+				<Layer frameStrata="DIALOG">
+					<FontString name="$parentt" inherits="GameFontNormalLarge" maxLines = "1" SetAllPoints="true"/>
+				</Layer>
+			</Layers>
+		</Frame>
+
+		<!-- hp num left -->
+		<Frame name="$parenthpn" enableMouse="false" frameStrata="HIGH">
+			<Scripts> <OnLoad>
+				ngoplayer_setDoubleParentKey(this, this:GetParent())
+				this:SetParent(PlayerFrame);
+				this:SetFrameStrata("HIGH");
+			</OnLoad> </Scripts>
+			<Size x="140" y="20" />
+			<Layers>
+				<Layer frameStrata="DIALOG">
+					<FontString name="$parentt" inherits="GameFontNormalLarge" maxLines = "1" SetAllPoints="true"/>
+				</Layer>
+			</Layers>
+		</Frame>
+
+		<!-- hp loss -->
+		<Frame name="$parenthpl" enableMouse="false" frameStrata="HIGH">
+			<Scripts> <OnLoad>
+				ngoplayer_setDoubleParentKey(this, this:GetParent())
+				this:SetParent(PlayerFrame);
+				this:SetFrameStrata("HIGH");
+			</OnLoad> </Scripts>
+			<Size x="140" y="20" />
+			<Layers>
+				<Layer frameStrata="DIALOG">
+					<FontString name="$parentt" inherits="GameFontNormalLarge" maxLines = "1" SetAllPoints="true"/>
+				</Layer>
+			</Layers>
+		</Frame>
+
+		<!-- mana a -->
+		<Frame name="$parentmaa" enableMouse="false">
+			<Scripts> <OnLoad>
+				ngoplayer_setDoubleParentKey(this, this:GetParent())
+				this:SetParent(PlayerFrame);
+				this:SetFrameStrata("HIGH");
+			</OnLoad> </Scripts>
+			<Size x="140" y="20" />
+			<Layers>
+				<Layer frameStrata="DIALOG">
+					<FontString name="$parentt" inherits="GameFontNormalLarge" maxLines = "1" SetAllPoints="true"/>
+				</Layer>
+			</Layers>
+		</Frame>
+
+		<!-- mana p -->
+		<Frame name="$parentmap" enableMouse="false">
+			<Scripts> <OnLoad>
+				ngoplayer_setDoubleParentKey(this, this:GetParent())
+				this:SetParent(PlayerFrame);
+				this:SetFrameStrata("HIGH");
+			</OnLoad> </Scripts>
+			<Size x="140" y="20" />
+			<Layers>
+				<Layer frameStrata="DIALOG">
+					<FontString name="$parentt" inherits="GameFontNormalLarge" maxLines = "1" SetAllPoints="true"/>
+				</Layer>
+			</Layers>
+		</Frame>
+
+		<!-- mana time left -->
+		<Frame name="$parentmat" enableMouse="false">
+			<Scripts> <OnLoad>
+				ngoplayer_setDoubleParentKey(this, this:GetParent())
+				this:SetParent(PlayerFrame);
+				this:SetFrameStrata("HIGH");
+			</OnLoad> </Scripts>
+			<Size x="140" y="20" />
+			<Layers>
+				<Layer frameStrata="DIALOG">
+					<FontString name="$parentt" inherits="GameFontNormalLarge" maxLines = "1" SetAllPoints="true"/>
+				</Layer>
+			</Layers>
+		</Frame>
+
+		<!-- mana num left -->
+		<Frame name="$parentman" enableMouse="false">
+			<Scripts> <OnLoad>
+				ngoplayer_setDoubleParentKey(this, this:GetParent())
+				this:SetParent(PlayerFrame);
+				this:SetFrameStrata("HIGH");
+			</OnLoad> </Scripts>
+			<Size x="140" y="20" />
+			<Layers>
+				<Layer frameStrata="DIALOG">
+					<FontString name="$parentt" inherits="GameFontNormalLarge" maxLines = "1" SetAllPoints="true"/>
+				</Layer>
+			</Layers>
+		</Frame>
+
+	</Frames>
+	<Size x="0" y="0" />
+	</Frame>
+</Ui>

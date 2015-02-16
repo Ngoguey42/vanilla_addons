@@ -1,0 +1,1 @@
+Quick and dirty addon for player hp/mana detailed informations
