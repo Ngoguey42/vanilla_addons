@@ -6,6 +6,13 @@ local framewidth = 272
 	------------------------------------------------
 	----------------	VARIABLES	----------------
 	------------------------------------------------
+
+local tslu = 0;
+local deltaup = 0.10;
+local tslu2 = 0;
+local deltaup2 = 1.0;
+local indicator_len = 0.5;
+local lasttime = 0;
 local autorepeat_status;
 local self
 local prevswing
@@ -14,7 +21,7 @@ local tab = {
 	["BAG_UPDATE"] = 0,
 	["UNIT_INVENTORY_CHANGED"] = 0,
 	["UPDATE_INVENTORY_ALERTS"] = 0,
-	["SPELLCAST_STOP"] = 0,
+	-- ["SPELLCAST_STOP"] = 0,
 	["ACTIONBAR_UPDATE_COOLDOWN"] = 0,
 	["SPELL_UPDATE_COOLDOWN"] = 0
 };
@@ -25,20 +32,37 @@ local onupdate;
 	------------------------------------------------
 local function setframesmeta()
 	self.f.bar:SetPoint("CENTER", -86, -224)
-	-- self.f.bar:SetBackdropColor(0.5, 0.5, 0.5, 0)
-	-- self.f.bar:SetBackdrop( { bgFile = "Interface/Tooltips/UI-Tooltip-Background",
-	  -- edgeFile = "Interface/Tooltips/UI-Tooltip-Border", tile = false, tileSize = 16, edgeSize = 10,
-	  -- insets = { left = 3, right = 3, top = 3, bottom = 3}
-	-- })
 	self.f.bar:SetWidth(framewidth);
 	self.f.bar:SetHeight(18);
-
-	-- self.f.bar:SetAlpha(0.45);
 	
-	-- for k, v in pairs (self.f.bar) do
-		-- print(tostring(k).."("..tostring(v)..")");
-	-- end
+	-- self.f.overshoot:SetPoint("LEFT", self.f.bar, "RIGHT", 0, 0);
+	-- self.f.overshoot:SetWidth(0);
+	-- self.f.overshoot:SetHeight(18);
+	-- self.f.overshoot:SetStatusBarColor(0.6, 0.0, 0.4, 0.75);
 	
+	self.f.overshoot:SetBackdrop({
+		bgFile = "Interface/Tooltips/UI-Tooltip-Background",
+	})
+	self.f.overshoot:SetBackdropColor(1, 0.0, 0.4, 0.75);
+	self.f.overshoot:SetHeight(18);
+	self.f.overshoot:SetPoint("LEFT", self.f.bar, "RIGHT", 0, 0);
+	self.f.overshoot:Show();
+	
+	self.f.lag:SetBackdrop({
+		bgFile = "Interface/Tooltips/UI-Tooltip-Background",
+	})
+	self.f.lag:SetBackdropColor(0.0, 0.0, 1, 0.6);
+	self.f.lag:SetHeight(18);
+	self.f.lag:SetPoint("RIGHT", self.f.bar, "RIGHT", 0, 0);
+	self.f.lag:Show();
+	
+	self.f.indicator:SetBackdrop({
+		bgFile = "Interface/Tooltips/UI-Tooltip-Background",
+	})
+	self.f.indicator:SetBackdropColor(0.5, 0.5, 0.5, 1);
+	self.f.indicator:SetHeight(18 / 2.5);
+	self.f.indicator:SetPoint("TOPRIGHT", self.f.bar, "TOPRIGHT", 0, 0);
+	self.f.indicator:Show();
 	return ;
 end
 
@@ -73,7 +97,7 @@ function ngorswing_onload()
 	self:RegisterEvent("BAG_UPDATE")
 	self:RegisterEvent("UNIT_INVENTORY_CHANGED")
 	self:RegisterEvent("UPDATE_INVENTORY_ALERTS")
-	self:RegisterEvent("SPELLCAST_STOP")
+	-- self:RegisterEvent("SPELLCAST_STOP")
 	self:RegisterEvent("ACTIONBAR_UPDATE_COOLDOWN")
 	self:RegisterEvent("SPELL_UPDATE_COOLDOWN")
 	-- self:RegisterAllEvents()
@@ -85,7 +109,15 @@ local function onPLAYER_ENTERING_WORLD()
 	self:SetScript("OnUpdate", onupdate);
 	self:Show();
 	autorepeat_status = false;
+
+	lasttime = GetTime();
+	tslu = 0;
+	tslu2 = 0;
 	self:SetAutorepeatStateOFF();
+	self.f.bar:SetValue(GetTime())
+	self.f.bar:SetMinMaxValues(prevswing, prevswing + UnitRangedDamage("player"));
+	local _, _, lag = GetNetStats();
+	self.f.lag:SetWidth(lag / (UnitRangedDamage("player") * 1000) * self.f.bar:GetWidth());
 	-- for k, v in pairs (self.f.bg) do
 		-- print(tostring(k).."("..tostring(v)..")");
 	-- end
@@ -96,8 +128,19 @@ end
 
 local function all_proced()
 	local t = GetTime();
+	-- local str= "";
+	-- local i = 0;
+	-- for k, v in pairs(tab) do
+		-- if (GetTime() - v > 0.035) then
+			-- i = i +1;
+			-- str = str.."["..k.."]="..tostring(GetTime() - v).." "
+		-- end
+	-- end
+	-- if (i < 2) then
+		-- print(str);
+	-- end
 	for k, v in pairs(tab) do
-		if (GetTime() - v > 0.015) then
+		if (GetTime() - v > 0.025) then
 			return (false);
 		end
 	end
@@ -121,7 +164,10 @@ function ngorswing_onevent(event, arg1, arg2, ...)
 		tab[event] = GetTime();
 		if (all_proced()) then
 			if (is_swing()) then
+				-- print("Swing");
 				prevswing = GetTime();
+			-- else
+			-- print("spells");
 			end
 		end
 	end
@@ -152,8 +198,31 @@ end
 	----------------	OnUpdate	----------------
 	------------------------------------------------
 function onupdate()
-	self.f.bar:SetMinMaxValues(prevswing, prevswing + UnitRangedDamage("player"));
-	self.f.bar:SetValue(GetTime())
+	local curtime = GetTime();
+	local diff = curtime - prevswing - UnitRangedDamage("player");
+
+	tslu = tslu + (curtime - lasttime);
+	tslu2 = tslu2 + (curtime - lasttime);
+	lasttime = curtime;
+	if (curtime < prevswing + UnitRangedDamage("player")) then
+		self.f.bar:SetValue(curtime);
+		-- self.f.overshoot:SetWidth(0);
+	elseif (diff < 0.5) then
+		-- print((prevswing + UnitRangedDamage("player") - curtime));
+		self.f.bar:SetValue(curtime);
+		self.f.overshoot:SetWidth((curtime - prevswing - UnitRangedDamage("player")) / UnitRangedDamage("player") * self.f.bar:GetWidth());
+	end
+	if (tslu > deltaup) then
+		tslu = 0;
+		self.f.bar:SetMinMaxValues(prevswing, prevswing + UnitRangedDamage("player"));
+	end
+	if (tslu2 > deltaup2) then
+		tslu2 = 0;
+		local _, _, lag = GetNetStats();
+		self.f.lag:SetWidth(lag / (UnitRangedDamage("player") * 1000) * self.f.bar:GetWidth());
+		self.f.indicator:SetWidth(indicator_len / UnitRangedDamage("player") * self.f.bar:GetWidth()); 
+	end
+	-- print(lag / (UnitRangedDamage("player") * 1000) * self.f.bar:GetWidth());
 	if (IsAutoRepeatAction(26)) then
 		if (not autorepeat_status) then
 			self:SetAutorepeatStateON()

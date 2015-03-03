@@ -48,6 +48,7 @@ local function setframesmeta()
 	self.f.cursort:SetPoint("TOP", self.f.cursor, "TOP", 0, 4);
 	self.f.cursort:SetTextColor(1, 1, 1, 0.65)
 	self.f.cursort:SetFont("Fonts\\FRIZQT__.TTF", 11, "OUTLINE")
+	
 	return ;
 end
 
@@ -66,7 +67,7 @@ local function setfuncs()
 			return
 		end
 		if (UnitIsFriend("player", "target") == nil) then
-			if (HasAction(68)) then --wing clip
+			if (HasAction(10)) then --wing clip /run print(HasAction(68));
 				tinsert(self.minRangeActions, {68, 5})
 			end
 			if (HasAction(37)) then --sticky truc
