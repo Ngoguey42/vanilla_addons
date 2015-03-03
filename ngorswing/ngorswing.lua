@@ -204,12 +204,13 @@ function onupdate()
 	tslu = tslu + (curtime - lasttime);
 	tslu2 = tslu2 + (curtime - lasttime);
 	lasttime = curtime;
-	if (curtime < prevswing + UnitRangedDamage("player")) then
+	if (diff < 0) then
 		self.f.bar:SetValue(curtime);
-		-- self.f.overshoot:SetWidth(0);
+		if ((- diff) < indicator_len) then
+			self.f.overshoot:Hide();
+		end
 	elseif (diff < 0.5) then
-		-- print((prevswing + UnitRangedDamage("player") - curtime));
-		self.f.bar:SetValue(curtime);
+		self.f.overshoot:Show();
 		self.f.overshoot:SetWidth((curtime - prevswing - UnitRangedDamage("player")) / UnitRangedDamage("player") * self.f.bar:GetWidth());
 	end
 	if (tslu > deltaup) then
