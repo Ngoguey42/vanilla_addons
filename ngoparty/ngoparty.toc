@@ -1,0 +1,6 @@
+## Interface: 50001
+## Author: ngo
+## Title: ngoparty
+## Notes: ngoparty
+## Version : 0.1.0
+ngoparty.xml
