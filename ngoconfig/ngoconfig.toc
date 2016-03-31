@@ -1,6 +1,6 @@
 ## Interface: 50001
 ## Author: ngo
-## Title: ngorange
-## Notes: ngorange
+## Title: ngoconfig
+## Notes: ngoconfig
 ## Version : 0.1.0
-ngorange.xml
+ngoconfig.xml

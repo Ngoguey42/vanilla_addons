@@ -1,1 +1,0 @@
-Quick and dirty addon for a distance to target bar.
