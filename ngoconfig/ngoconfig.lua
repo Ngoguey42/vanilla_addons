@@ -104,11 +104,15 @@ ActionBar page 6 (Bottom Left ActionBar): slots 61 to 72
 		
 		-- /script
 		
-		
+		local slots_to_clean = {
+		      1, 2, 3, 4, 5, 6
+		     };
 		
 		local spells = {
 			["Tir automatique"] = 26,
-			["Berserker"] = 66,
+			["Berserker"] = 66, --TROLL
+			["Forme de pierre"] = 66, --DWARF
+			["Découverte de trésors"] = 27, --DWARF
 			["Attaque"] = 11,
 			["Attaque du raptor"] = 12,
 		};
@@ -117,6 +121,7 @@ ActionBar page 6 (Bottom Left ActionBar): slots 61 to 72
 			["togti"] = 28,
 			["asspe"] = 58,
 			["togta"] = 59,
+			["relui"] = 40,
 			["togcl"] = 60,
 		}
 		local items = {
@@ -126,6 +131,12 @@ ActionBar page 6 (Bottom Left ActionBar): slots 61 to 72
 
 		local function placeSpells()
 			local i;
+
+			for _, v in pairs(slots_to_clean) do
+			    PickupAction(v);
+			    ClearCursor();
+			end			
+
 			i = 1;
 			while true do
 				local spellName, _ = GetSpellName(i, BOOKTYPE_SPELL);
