@@ -230,7 +230,7 @@ ActionBar page 6 (Bottom Left ActionBar): slots 61 to 72
 		-- /script placeSpells()
 		-- /script setConfig();
 
-		function setConfig()
+		local function setConfig()
 
 			SetActionBarToggles(1, 1, 1, 1);
 			SHOW_MULTI_ACTIONBAR_1 = 1;
@@ -248,6 +248,8 @@ ActionBar page 6 (Bottom Left ActionBar): slots 61 to 72
 			placeSpells();
 
 		end
+
+		_G["sc"] = setConfig
 
 		-- PlaceAction(slot)
 		-- CursorHasSpell()
