@@ -27,7 +27,8 @@
     <Frames>
       <Frame name="$parentbar" enableMouse="false" frameStrata="LOW">
 	<Scripts> <OnLoad>
-          ngorange_setDoubleParentKey(this, this:GetParent())
+	  local this = self;
+          ngorange_setDoubleParentKey(this, this:GetParent());
           this:SetParent(UIParent);
           this:SetFrameStrata("HIGH");
 	</OnLoad> </Scripts>
@@ -40,6 +41,7 @@
 
       <Frame name="$parentcursor" enableMouse="false" frameStrata="DIALOG">
 	<Scripts> <OnLoad>
+	  local this = self;
           ngorange_setDoubleParentKey(this, this:GetParent())
 	</OnLoad> </Scripts>
 	<Layers>

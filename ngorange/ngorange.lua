@@ -66,7 +66,7 @@ local function setfuncs()
       self.f.bar:SetAlpha(0);
       return
     end
-    if (UnitIsFriend("player", "target") == nil) then
+    if (not UnitIsFriend("player", "target")) then
       if (HasAction(10)) then --wing clip /run print(HasAction(68));
         tinsert(self.minRangeActions, {68, 5})
       end
@@ -107,6 +107,8 @@ local function setfuncs()
         str = "";
       end
     end
+    for k, v in ipairs (self.BreakPoints) do
+    end
   end
 
   function self:DetermineRangeArray()
@@ -120,7 +122,7 @@ local function setfuncs()
         elseif (v[2] == 2) then
           test = IsActionInRange(v[3]);
         end
-        if (test and test == 1) then
+        if (test) then
           maxpossible = v[1];
           break ;
         else
@@ -138,7 +140,7 @@ local function setfuncs()
             maxpossible = v[1];
           end
         elseif (v[2] == 4) then
-          if (test and test == 1) then
+          if (test) then
             maxpossible = v[1];
           else
             minpossible = v[1];
@@ -194,7 +196,6 @@ local function setfuncs()
     end
     self.f.bar.setpane(self.f.bg[getn(self.BreakPoints) + 1], minv, MaxDist, leftanchor);
     for k = getn(self.BreakPoints) + 2, getn(self.f.bg), 1 do
-      -- print("hiding pane"..k)
       pane = self.f.bg[k];
       pane:Hide()
     end
