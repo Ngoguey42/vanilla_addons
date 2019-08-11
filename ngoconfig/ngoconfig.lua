@@ -48,9 +48,9 @@ end
 ------------------------------------------------
 function ngoconfig_onevent(event, arg1, arg2, ...)
 
-  if (event == "UI_INFO_MESSAGE" and GetNumPartyMembers() > 0) then
-    SendChatMessage(arg1, "PARTY");
-  end
+  -- if (event == "UI_INFO_MESSAGE" and GetNumPartyMembers() > 0) then
+  --   SendChatMessage(arg1, "PARTY");
+  -- end
   if (event == "PLAYER_ENTERING_WORLD") then
     self:UnregisterEvent("PLAYER_ENTERING_WORLD")
 
@@ -142,7 +142,7 @@ function ngoconfig_onevent(event, arg1, arg2, ...)
       end
     end
 
-    local function macroIter() --Spellbook iterator
+    local function macroIter() --Macro iterator
       local i = 1
 
       return function ()
