@@ -42,15 +42,21 @@ end
 local function createSpell(spellIdOrName)
   local o = {}
   local name, _, _, _, minrange, maxrange, id, _ = GetSpellInfo(spellIdOrName)
+  local can_discriminate_too_close_too_far = minrange < 28 - 3 and maxrange > 28 + 3
 
   o.true_range = createRange(minrange, maxrange)
   local function call()
     local inrange = tribool(IsSpellInRange(name, "target")) -- /!\ does not use id!
     local possible = inrange ~= nil and UnitExists("target") and not UnitIsDeadOrGhost("target")
+    local below28 = tribool(CheckInteractDistance("target", 4))
 
     if possible and inrange then
       return createRange(minrange, maxrange)
     elseif possible and minrange == 0 then
+      return createRange(maxrange, MAXRANGE)
+    elseif can_discriminate_too_close_too_far and below28 then
+	return createRange(0, minrange)
+    elseif can_discriminate_too_close_too_far and not below28 then
       return createRange(maxrange, MAXRANGE)
     else
       return createRange()
@@ -72,15 +78,21 @@ local function createItem(itemIdOrName)
   assert(sname ~= nil)
   local _, _, _, _, minrange, maxrange, _, _ = GetSpellInfo(sid)
   assert(maxrange ~= nil)
+  local can_discriminate_too_close_too_far = minrange < 28 - 3 and maxrange > 28 + 3
 
   o.true_range = createRange(minrange, maxrange)
   local function call()
     local inrange = tribool(IsItemInRange(itemIdOrName, "target"))
     local possible = inrange ~= nil and UnitExists("target") and not UnitIsDeadOrGhost("target")
+    local below28 = tribool(CheckInteractDistance("target", 4))
 
     if possible and inrange then
       return createRange(minrange, maxrange)
     elseif possible and minrange == 0 then
+      return createRange(maxrange, MAXRANGE)
+    elseif can_discriminate_too_close_too_far and below28 then
+	return createRange(0, minrange)
+    elseif can_discriminate_too_close_too_far and not below28 then
       return createRange(maxrange, MAXRANGE)
     else
       return createRange()

@@ -71,6 +71,7 @@ local function setupFrames(self)
   })
   self.cursor:SetHeight(18);
   self.cursor:SetAlpha(1);
+  self.cursor:Hide()
 
   self.cursor.text:SetPoint("CENTER")
   self.cursor.text:SetTextColor(1, 1, 1, 0.65)
@@ -155,10 +156,17 @@ local function closure()
     if (event == "PLAYER_ENTERING_WORLD") then
       ngorange:UnregisterEvent("PLAYER_ENTERING_WORLD")
       ngorange:SetScript("OnUpdate", onUpdate);
-      range_tests = ngorangeCreateRangeTests()
     end
     if (event == "PLAYER_TARGET_CHANGED") then
+      if range_tests == nil then
+	range_tests = ngorangeCreateRangeTests() -- no spellbook in PLAYER_ENTERING_WORLD
+      end
       has_target = UnitExists("target")
+      if has_target then
+	self.cursor:Show()
+      else
+	self.cursor:Hide()
+      end
     end
   end
 
