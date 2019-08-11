@@ -54,9 +54,9 @@ local function createSpell(spellIdOrName)
       return createRange(minrange, maxrange)
     elseif possible and minrange == 0 then
       return createRange(maxrange, MAXRANGE)
-    elseif can_discriminate_too_close_too_far and below28 then
+    elseif possible and can_discriminate_too_close_too_far and below28 then
 	return createRange(0, minrange)
-    elseif can_discriminate_too_close_too_far and not below28 then
+    elseif possible and can_discriminate_too_close_too_far and not below28 then
       return createRange(maxrange, MAXRANGE)
     else
       return createRange()
@@ -90,9 +90,9 @@ local function createItem(itemIdOrName)
       return createRange(minrange, maxrange)
     elseif possible and minrange == 0 then
       return createRange(maxrange, MAXRANGE)
-    elseif can_discriminate_too_close_too_far and below28 then
+    elseif possible and can_discriminate_too_close_too_far and below28 then
 	return createRange(0, minrange)
-    elseif can_discriminate_too_close_too_far and not below28 then
+    elseif possible and can_discriminate_too_close_too_far and not below28 then
       return createRange(maxrange, MAXRANGE)
     else
       return createRange()

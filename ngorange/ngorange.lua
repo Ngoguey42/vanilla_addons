@@ -1,4 +1,3 @@
-
 local function setChildrenKeys(self)
   if self.GetNumChildren == nil then
     return
@@ -34,19 +33,12 @@ local function setChildrenKeys(self)
 end
 
 local function setupFrames(self)
-
   self:SetParent(UIParent);
   self:SetWidth(272);
   self:SetHeight(28);
   self:SetFrameStrata("HIGH");
   self:SetPoint("CENTER", -86, -254)
   self:SetBackdropColor(1, 0, 0, 0)
-
-  self:SetMovable(true)
-  self:EnableMouse(true)
-  self:RegisterForDrag("LeftButton")
-  self:SetScript("OnDragStart", self.StartMoving)
-  self:SetScript("OnDragStop", self.StopMovingOrSizing)
 
   self.bar:SetParent(self);
   self.bar:SetPoint("TOPLEFT", self, "TOPLEFT", 0, 0)
@@ -76,9 +68,7 @@ local function setupFrames(self)
   self.cursor.text:SetPoint("CENTER")
   self.cursor.text:SetTextColor(1, 1, 1, 0.65)
   self.cursor.text:SetFont("Fonts\\FRIZQT__.TTF", 11, "OUTLINE")
-
 end
-
 
 function moveCursor(self, range)
   local left, right, middle, width, overflow_left, overflow_right
@@ -108,12 +98,36 @@ function moveCursor(self, range)
   self.cursor.text:SetText(range.start.."+");
 end
 
+local function help()
+  print("| >>> ngorange, a wow classic addon to approximate the target's distance");
+  print('| Works on all targets');
+  print('| The 5 sources of distance:');
+  print('| - Is the spell in range (works with all spells in your spellbook)');
+  print('| - Is the item in range (works with all items in your bags that can be casted on a target)');
+  print('| - Is your target close enough to be followed (28 yards) (works with all units)');
+  print('| - Is your target close enough to be inspected (10 yards) (works with all units)');
+  print('| - Is your target close enough to be healed (40 yards) (works with all units in party/raid)');
+  print('|  ');
+  print('| /ngorange help -> Print this message');
+  print('| /ngorange reset -> Reset the spells and items monitored (useful when new spells or new items)');
+  print("| /ngorange show -> Show what is monitored to approximate the target's distance");
+  print('|  ');
+  print('| Quickly developped by ngo the 11-august-2019 on wow classic 1.13.');
+end
+
 local function closure()
   local self
   local has_target = UnitExists("target")
   local range_tests
 
+  local function primeTests()
+    if range_tests == nil then
+      range_tests = ngorangeCreateRangeTests() -- no spellbook in PLAYER_ENTERING_WORLD
+    end
+  end
+
   local function onSlash(msg)
+    primeTests()
     if msg == 'reset' then
       range_tests = ngorangeCreateRangeTests()
     elseif msg == 'show' then
@@ -121,20 +135,7 @@ local function closure()
 	print('->', v);
       end
     else
-      print("| >>> ngorange, a wow classic addon to approximate the target's distance");
-      print('| Works on all targets');
-      print('| The 5 sources of distance:');
-      print('| - Is the spell in range (works with all spells in your spellbook)');
-      print('| - Is the item in range (works with all items in your bags that can be casted on a target)');
-      print('| - Is your target close enough to be followed (28 yards) (works with all units)');
-      print('| - Is your target close enough to be inspected (10 yards) (works with all units)');
-      print('| - Is your target close enough to be healed (40 yards) (works with all units in party/raid)');
-      print('|  ');
-      print('| /ngorange help -> Print this message');
-      print('| /ngorange reset -> Reset the spells and items monitored (useful when new spells or new items)');
-      print("| /ngorange show -> Show what is monitored to approximate the target's distance");
-      print('|  ');
-      print('| Quickly developped by ngo the 11-august-2019 on wow classic 1.13.');
+      help()
     end
   end
 
@@ -158,9 +159,7 @@ local function closure()
       ngorange:SetScript("OnUpdate", onUpdate);
     end
     if (event == "PLAYER_TARGET_CHANGED") then
-      if range_tests == nil then
-	range_tests = ngorangeCreateRangeTests() -- no spellbook in PLAYER_ENTERING_WORLD
-      end
+      primeTests()
       has_target = UnitExists("target")
       if has_target then
 	self.cursor:Show()
@@ -172,13 +171,30 @@ local function closure()
 
   local function onLoad()
     self = ngorange
+
     self:SetScript("OnEvent", onEvent);
     self:RegisterEvent("PLAYER_TARGET_CHANGED")
     self:RegisterEvent("PLAYER_ENTERING_WORLD")
 
+    self:SetMovable(true)
+    self:EnableMouse(true)
+    self:RegisterForDrag("LeftButton")
+    self:SetScript("OnDragStart", self.StartMoving)
+    self:SetScript("OnDragStop", self.StopMovingOrSizing)
+
     setChildrenKeys(self)
     setupFrames(self)
     print("Welcome to ngorange. Commands: `/ngorange help`, `/ngorange show`, `/ngorange reset`.");
+  end
+
+  function LOL() -- global for debug
+    primeTests()
+    r = ngorangeCreateRange()
+    for k, v in ipairs(range_tests) do
+      s = v()
+      r = r * s
+      print(v, s, r);
+    end
   end
 
   return onLoad, onSlash
@@ -187,13 +203,3 @@ end
 ngorange_onload, ngorange_onslash = closure()
 SLASH_NGORANGE1 = "/ngorange"
 SlashCmdList["NGORANGE"] = ngorange_onslash
-function LOL()
-  range_tests = ngorangeCreateRangeTests()
-  local s, r
-  r = ngorangeCreateRange()
-  for k, v in ipairs(range_tests) do
-    s = v()
-    r = r * s
-    print(v, s, r);
-  end
-end
