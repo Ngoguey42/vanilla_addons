@@ -1,6 +1,7 @@
-## Interface: 50001
+## Interface: 11302
 ## Author: ngo
 ## Title: ngorange
 ## Notes: ngorange
-## Version : 0.1.0
+## Version : 0.2.0
+ranges.lua
 ngorange.xml

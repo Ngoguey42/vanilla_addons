@@ -4,52 +4,25 @@
 			..\..\FrameXML\UI.xsd">
 
   <Script file="ngorange.lua"/>
-  <!-- Virtual frame -->
-  <Frame name="ngorangevirtual" enableMouse="false" frameStrata="HIGH" virtual="true">
-    <Layers>
-      <Layer frameStrata="DIALOG">
-	<FontString name="$parentt" inherits="GameFontNormalLarge" maxLines = "1" SetAllPoints="true"/>
-      </Layer>
-    </Layers>
-  </Frame>
 
-  <!-- EnvFrames -->
   <Frame name="ngorange" frameStrata="high" enableMouse="true" movable="true" parent="UIParent">
-    <!-- Scripts -->
-    <Scripts>
-      <OnLoad>ngorange_onload();</OnLoad>
-      <OnEvent>ngorange_onevent(event, arg1, arg2);</OnEvent>
-    </Scripts>
-    <!-- Backdrops -->
-    <Backdrop bgFile="Interface\ChatFrame\ChatFrameBackground" tile="false">
-    </Backdrop>
-    <!-- Frames -->
+    <Scripts><OnLoad>ngorange_onload();</OnLoad></Scripts>
+    <Backdrop bgFile="Interface\ChatFrame\ChatFrameBackground" tile="false"/>
     <Frames>
-      <Frame name="$parentbar" enableMouse="false" frameStrata="LOW">
-	<Scripts> <OnLoad>
-	  local this = self;
-          ngorange_setDoubleParentKey(this, this:GetParent());
-          this:SetParent(UIParent);
-          this:SetFrameStrata("HIGH");
-	</OnLoad> </Scripts>
-	<Layers>
-          <Layer frameStrata="DIALOG">
-            <FontString name="$parentt" inherits="GameFontNormalLarge" maxLines = "1" SetAllPoints="true"/>
-          </Layer>
-	</Layers>
+
+      <Frame name="$parent_bar" enableMouse="false" frameStrata="LOW">
       </Frame>
 
-      <Frame name="$parentcursor" enableMouse="false" frameStrata="DIALOG">
-	<Scripts> <OnLoad>
-	  local this = self;
-          ngorange_setDoubleParentKey(this, this:GetParent())
-	</OnLoad> </Scripts>
-	<Layers>
+      <Frame name="$parent_cursor" enableMouse="false" frameStrata="DIALOG">
+ts> -->
+        <Layers>
           <Layer frameStrata="DIALOG">
-            <FontString name="$parentt" inherits="GameFontNormalLarge" maxLines = "1"/>
+            <FontString name="$parent_text" inherits="GameFontNormalLarge" maxLines = "1">
+	    </FontString>
           </Layer>
-	</Layers>
+        </Layers>
       </Frame>
+
     </Frames>
     <Size x="0" y="0" />
   </Frame>
