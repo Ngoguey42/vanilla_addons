@@ -1,0 +1,386 @@
+﻿<Ui xmlns="http://www.blizzard.com/wow/ui/" 
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+xsi:schemaLocation="http://www.blizzard.com/wow/ui/ 
+..\..\FrameXML\UI.xsd">
+<Script file="CustomFrames.lua"/>
+
+
+<!-- MyFrameCustomFrames -->
+	<Frame name="MyCFframe" frameStrata="medium" enableMouse="true" movable="true" parent="UIParent">
+<!-- Scripts -->
+		<Scripts>
+			<OnLoad>CustomFrames_OnLoad();</OnLoad>
+			<OnEvent>CustomFrames_OnEvent(event, arg1, arg2);</OnEvent>
+		</Scripts>
+<!-- Backdrops -->
+		<Backdrop bgFile="Interface\ChatFrame\ChatFrameBackground" tile="false">
+		</Backdrop>
+<!-- Frames -->
+	<Frames>
+		<!-- HP target % -->
+		<Frame name="customHPframe" parent="TargetFrameHealthBar" enableMouse="false" frameStrata="HIGH">
+			<Backdrop bgFile="Interface\ChatFrame\ChatFrameBackground" tile="false"/>
+			<Size x="100" y="20" />
+			<Anchors>
+				<Anchor point="CENTER" relativeTo="$parent" RelativePoint="RIGHT" />
+			</Anchors>
+			<Layers>
+				<Layer frameStrata="DIALOG">
+						<FontString name="customHPframeText" inherits="GameFontNormalLarge" maxLines = "1" SetAllPoints="true"/>
+				</Layer>
+			</Layers>
+		</Frame>
+		
+		<!-- HP target max -->
+		<Frame name="customHPmaxframe" parent="TargetFrameHealthBar" enableMouse="false" frameStrata="HIGH">
+			<Backdrop bgFile="Interface\ChatFrame\ChatFrameBackground" tile="false"/>
+			<Size x="100" y="20" />
+			<Anchors>
+				<Anchor point="CENTER" relativeTo="$parent" RelativePoint="RIGHT" />
+			</Anchors>
+			<Layers>
+				<Layer frameStrata="DIALOG">
+						<FontString name="customHPmaxframeText" inherits="GameFontNormalLarge" maxLines = "1" SetAllPoints="true"/>
+				</Layer>
+			</Layers>
+		</Frame>
+		
+		<!-- rage current -->
+		<Frame name="customRageframe" parent="PlayerFrameManaBar" enableMouse="false" frameStrata="HIGH" hidden="true">
+			<Backdrop bgFile="Interface\ChatFrame\ChatFrameBackground" tile="false"/>
+			<Size x="100" y="20" />
+			<Anchors>
+				<Anchor point="CENTER" relativeTo="$parent" RelativePoint="RIGHT" />
+			</Anchors>
+			<Layers>
+				<Layer frameStrata="DIALOG">
+						<FontString name="customRageframeText" inherits="GameFontNormalLarge" maxLines = "1" SetAllPoints="true"/>
+				</Layer>
+			</Layers>
+		</Frame>
+	
+		<!-- rend timer -->
+		<Frame name="customRendframe" parent="TargetFrameHealthBar" enableMouse="false" frameStrata="HIGH" hidden="true">
+			<Backdrop bgFile="Interface\ChatFrame\ChatFrameBackground" tile="false"/>
+			<Size x="100" y="20" />
+			<Anchors>
+				<Anchor point="CENTER" relativeTo="$parent" RelativePoint="RIGHT" />
+			</Anchors>
+			<Layers>
+				<Layer frameStrata="DIALOG">
+						<FontString name="customRendframeText" inherits="GameFontNormalLarge" maxLines = "1" SetAllPoints="true"/>
+				</Layer>
+			</Layers>
+		</Frame>	
+		
+		<!-- HS timer -->
+		<Frame name="customHSframe" parent="TargetFrameManaBar" enableMouse="false" frameStrata="HIGH" hidden="true">
+			<Backdrop bgFile="Interface\ChatFrame\ChatFrameBackground" tile="false"/>
+			<Size x="100" y="20" />
+			<Anchors>
+				<Anchor point="CENTER" relativeTo="$parent" RelativePoint="RIGHT" />
+			</Anchors>
+			<Layers>
+				<Layer frameStrata="DIALOG">
+						<FontString name="customHSframeText" inherits="GameFontNormalLarge" maxLines = "1" SetAllPoints="true"/>
+				</Layer>
+			</Layers>
+		</Frame>
+		
+		<!-- Damage spells -->
+		<Frame name="customDamageframe" parent="TargetFrameTextureFrame" enableMouse="false" frameStrata="HIGH" hidden="true">
+			<Backdrop bgFile="Interface\ChatFrame\ChatFrameBackground" tile="false"/>
+			<Size x="50" y="80" />
+			<Anchors>
+				<Anchor point="CENTER" relativeTo="$parent" RelativePoint="RIGHT" />
+			</Anchors>
+			<Layers>
+				<Layer frameStrata="DIALOG">
+						<FontString name="customDamageframeText" inherits="GameFontNormalLarge" maxLines = "5" SetAllPoints="true"/>
+				</Layer>
+			</Layers>
+		</Frame>		
+		
+		<!-- Damage Percent spells -->
+		<Frame name="customDamagePercframe" parent="TargetFrameTextureFrame" enableMouse="false" frameStrata="HIGH" hidden="true">
+			<Backdrop bgFile="Interface\ChatFrame\ChatFrameBackground" tile="false"/>
+			<Size x="50" y="80" />
+			<Anchors>
+				<Anchor point="CENTER" relativeTo="$parent" RelativePoint="RIGHT" />
+			</Anchors>
+			<Layers>
+				<Layer frameStrata="DIALOG">
+						<FontString name="customDamagePercframeText" inherits="GameFontNormalLarge" maxLines = "5" SetAllPoints="true"/>
+				</Layer>
+			</Layers>
+		</Frame>
+		
+		<!-- Damage Name spells -->
+		<Frame name="customDamageNameframe" parent="TargetFrameTextureFrame" enableMouse="false" frameStrata="HIGH" hidden="true">
+			<Backdrop bgFile="Interface\ChatFrame\ChatFrameBackground" tile="false"/>
+			<Size x="60" y="80" />
+			<Anchors>
+				<Anchor point="CENTER" relativeTo="$parent" RelativePoint="RIGHT" />
+			</Anchors>
+			<Layers>
+				<Layer frameStrata="DIALOG">
+						<FontString name="customDamageNameframeText" inherits="GameFontNormalLarge" maxLines = "5" SetAllPoints="true"/>
+				</Layer>
+			</Layers>
+		</Frame>
+		
+		
+		<!-- Damage Rentabilité spells -->
+		<Frame name="customDamageRentabframe" parent="TargetFrameTextureFrame" enableMouse="false" frameStrata="HIGH" hidden="true">
+			<Backdrop bgFile="Interface\ChatFrame\ChatFrameBackground" tile="false"/>
+			<Size x="115" y="80" />
+			<Anchors>
+				<Anchor point="CENTER" relativeTo="$parent" RelativePoint="RIGHT" />
+			</Anchors>
+			<Layers>
+				<Layer frameStrata="DIALOG">
+						<FontString name="customDamageRentabframeText" inherits="GameFontNormalLarge" maxLines = "5" SetAllPoints="true"/>
+				</Layer>
+			</Layers>
+		</Frame>
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		<!-- Damage Real spells -->
+		<Frame name="customDamageREALframe" parent="TargetFrameTextureFrame" enableMouse="false" frameStrata="HIGH" hidden="true">
+			<Backdrop bgFile="Interface\ChatFrame\ChatFrameBackground" tile="false"/>
+			<Size x="50" y="80" />
+			<Anchors>
+				<Anchor point="CENTER" relativeTo="$parent" RelativePoint="RIGHT" />
+			</Anchors>
+			<Layers>
+				<Layer frameStrata="DIALOG">
+						<FontString name="customDamageREALframeText" inherits="GameFontNormalLarge" maxLines = "5" SetAllPoints="true"/>
+				</Layer>
+			</Layers>
+		</Frame>		
+		
+		<!-- Damage Real Percent spells -->
+		<Frame name="customDamagePercREALframe" parent="TargetFrameTextureFrame" enableMouse="false" frameStrata="HIGH" hidden="true">
+			<Backdrop bgFile="Interface\ChatFrame\ChatFrameBackground" tile="false"/>
+			<Size x="50" y="80" />
+			<Anchors>
+				<Anchor point="CENTER" relativeTo="$parent" RelativePoint="RIGHT" />
+			</Anchors>
+			<Layers>
+				<Layer frameStrata="DIALOG">
+						<FontString name="customDamagePercREALframeText" inherits="GameFontNormalLarge" maxLines = "5" SetAllPoints="true"/>
+				</Layer>
+			</Layers>
+		</Frame>
+		
+		<!-- Damage Real Rentabilité spells -->
+		<Frame name="customDamageRentabREALframe" parent="TargetFrameTextureFrame" enableMouse="false" frameStrata="HIGH" hidden="true">
+			<Backdrop bgFile="Interface\ChatFrame\ChatFrameBackground" tile="false"/>
+			<Size x="115" y="80" />
+			<Anchors>
+				<Anchor point="CENTER" relativeTo="$parent" RelativePoint="RIGHT" />
+			</Anchors>
+			<Layers>
+				<Layer frameStrata="DIALOG">
+						<FontString name="customDamageRentabREALframeText" inherits="GameFontNormalLarge" maxLines = "5" SetAllPoints="true"/>
+				</Layer>
+			</Layers>
+		</Frame>		
+		
+		
+		<!-- xp tracker catégories names -->
+		<Frame name="customXPCatsframe" parent="UIParent" enableMouse="false" frameStrata="LOW">
+			<Backdrop bgFile="Interface\ChatFrame\ChatFrameBackground" tile="false"/>
+			<Size x="70" y="320" />
+			<Anchors>
+				<Anchor point="CENTER" relativeTo="$parent" RelativePoint="CENTER" />
+			</Anchors>
+			<Layers>
+				<Layer frameStrata="DIALOG">
+						<FontString name="customXPCatsframeText" inherits="GameFontNormalLarge" maxLines = "20" SetAllPoints="true"/>
+				</Layer>
+			</Layers>
+		</Frame>
+		
+		
+		<Frame name="customXPValsframe" parent="customXPCatsframe" enableMouse="false" frameStrata="LOW">
+			<Backdrop bgFile="Interface\ChatFrame\ChatFrameBackground" tile="false"/>
+			<Size x="82" y="320" />
+			<Anchors>
+				<Anchor point="TOPLEFT" relativeTo="$parent" RelativePoint="TORIGHT" />
+			</Anchors>
+			<Layers>
+				<Layer frameStrata="DIALOG">
+						<FontString name="customXPValsframeText" inherits="GameFontNormalLarge" maxLines = "20" SetAllPoints="true"/>
+				</Layer>
+			</Layers>
+		</Frame>
+		
+		
+		<Frame name="customXPPercframe" parent="customXPValsframe" enableMouse="false" frameStrata="LOW">
+			<Backdrop bgFile="Interface\ChatFrame\ChatFrameBackground" tile="false"/>
+			<Size x="55" y="320" />
+			<Anchors>
+				<Anchor point="TOPLEFT" relativeTo="$parent" RelativePoint="TORIGHT" />
+			</Anchors>
+			<Layers>
+				<Layer frameStrata="DIALOG">
+						<FontString name="customXPPercframeText" inherits="GameFontNormalLarge" maxLines = "20" SetAllPoints="true"/>
+				</Layer>
+			</Layers>
+		</Frame>
+		
+		
+		<Frame name="customXPHourframe" parent="customXPPercframe" enableMouse="false" frameStrata="LOW">
+			<Backdrop bgFile="Interface\ChatFrame\ChatFrameBackground" tile="false"/>
+			<Size x="70" y="320" />
+			<Anchors>
+				<Anchor point="TOPLEFT" relativeTo="$parent" RelativePoint="TORIGHT" />
+			</Anchors>
+			<Layers>
+				<Layer frameStrata="DIALOG">
+						<FontString name="customXPHourframeText" inherits="GameFontNormalLarge" maxLines = "20" SetAllPoints="true"/>
+				</Layer>
+			</Layers>
+		</Frame>
+		
+		
+		<Frame name="customXPRatioframe" parent="customXPHourframe" enableMouse="false" frameStrata="LOW">
+			<Backdrop bgFile="Interface\ChatFrame\ChatFrameBackground" tile="false"/>
+			<Size x="60" y="320" />
+			<Anchors>
+				<Anchor point="TOPLEFT" relativeTo="$parent" RelativePoint="TORIGHT" />
+			</Anchors>
+			<Layers>
+				<Layer frameStrata="DIALOG">
+						<FontString name="customXPRatioframeText" inherits="GameFontNormalLarge" maxLines = "20" SetAllPoints="true"/>
+				</Layer>
+			</Layers>
+		</Frame>
+		
+		
+		<Frame name="customChances1frame" parent="UIParent" enableMouse="false" frameStrata="LOW" hidden="true">
+			<Backdrop bgFile="Interface\ChatFrame\ChatFrameBackground" tile="false"/>
+			<Size x="20" y="35" />
+			<Anchors>
+				<Anchor point="TOPLEFT" relativeTo="$parent" RelativePoint="TORIGHT" />
+			</Anchors>
+		</Frame>
+		
+		
+
+		
+		<Frame name="customXPvalsframe" parent="MainMenuExpBar" enableMouse="false" frameStrata="HIGH">
+			<Backdrop bgFile="Interface\ChatFrame\ChatFrameBackground" tile="false"/>
+			<Size x="400" y="20" />
+			<Anchors>
+				<Anchor point="CENTER" relativeTo="$parent" RelativePoint="CENTER" />
+			</Anchors>
+			<Layers>
+				<Layer frameStrata="DIALOG">
+						<FontString name="$parentText" inherits="GameFontNormalLarge" maxLines = "1" SetAllPoints="true"/>
+				</Layer>
+			</Layers>
+			<Scripts>
+				<OnLoad>
+					function customXPvalsframe:UpdateText(CurXP)
+						if CurXP == nil then
+							print("nil curxp");
+							return ;
+						end
+						local MaxXP = UnitXPMax("player");
+						local CurPerc = CurXP * 100 / MaxXP;
+						local CurDeficit = MaxXP - CurXP;
+						local CurPercDeficit = floor((100 - CurPerc) * 10) / 10;
+						CurPerc = floor((CurPerc) * 10) / 10;
+						
+						customXPvalsframeText:SetText("("..CurPerc.."%) "..CurXP.."/"..MaxXP.." (-"..CurDeficit..")(-"..CurPercDeficit.."%)");
+
+						
+					end
+				</OnLoad>
+			</Scripts>
+		</Frame>
+		
+		
+		<Frame name="customMoneyframe" parent="MainMenuBarBackpackButton" enableMouse="false" frameStrata="HIGH">
+			<Backdrop bgFile="Interface\ChatFrame\ChatFrameBackground" tile="false"/>
+			<Size x="100" y="20" />
+			<Anchors>
+				<Anchor point="CENTER" relativeTo="$parent" RelativePoint="CENTER" />
+			</Anchors>
+			<Layers>
+				<Layer frameStrata="DIALOG">
+						<FontString name="$parentText" inherits="GameFontNormalLarge" maxLines = "1" SetAllPoints="true"/>
+				</Layer>
+			</Layers>
+			<Scripts>
+				<OnLoad>
+					function customMoneyframe:UpdateText()
+						local CurCopper = GetMoney("player");
+						
+						local Copper = mod(CurCopper, 100);
+						local Silver = mod(CurCopper / 100, 100);
+						local Gold = CurCopper / 10000 ;
+						
+						Copper = floor(Copper);
+						Silver = floor(Silver);
+						Gold = floor(Gold);
+						customMoneyframeText:SetText(Gold..":"..Silver..":"..Copper);
+					end
+
+				</OnLoad>
+			</Scripts>
+		</Frame>
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+      <!-- Status bar to update duration visually -->
+      <StatusBar name="customSwingBar" hidden="true">
+        <Size>
+          <AbsDimension x="370" y="20"/>
+        </Size>
+        <Anchors>
+          <Anchor point="TOPLEFT">
+            <Offset>
+              <AbsDimension x="-920" y="462"/>
+            </Offset>
+          </Anchor>
+        </Anchors>
+
+        <BarTexture file="Interface\TargetingFrame\UI-StatusBar"/>
+        <BarColor r="1.0" g="0.7" b="0.0" a="0.5"/>
+
+		
+      </StatusBar>
+		
+		
+		
+		
+		
+	</Frames>
+		
+		<Size x="1" y="1" />
+	</Frame>
+</Ui>

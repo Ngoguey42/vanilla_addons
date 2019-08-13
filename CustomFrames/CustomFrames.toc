@@ -1,0 +1,8 @@
+## Interface: 50001
+## Author: Nion
+## Title: CustomFrames
+## Notes: CustomFrames
+## Version : 0.1.0
+## SavedVariables: CF_XPGainsTable, CF_OfflineTime, CF_LogStartTime, CF_MySessionXP
+CustomFrames.xml
+CustomFrames.lua
