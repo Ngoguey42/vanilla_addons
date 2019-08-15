@@ -1,37 +1,3 @@
-local function setChildrenKeys(self)
-  if self.GetNumChildren == nil then
-    return
-  end
-
-  local f, n, m
-  n = self:GetName().."_"
-
-  for i = 1, self:GetNumChildren(), 1 do
-    f = select(i, self:GetChildren())
-    m = f:GetName()
-    if m ~= nil then
-      m, count = string.gsub(m, n, "")
-      if count == 1 then
-        rawset(self, m, f)
-        setChildrenKeys(f)
-      end
-    end
-  end
-
-  for i = 1, self:GetNumRegions(), 1 do
-    f = select(i, self:GetRegions())
-    m = f:GetName()
-    if m ~= nil then
-      m, count = string.gsub(m, n, "")
-      if count == 1 then
-        rawset(self, m, f)
-        setChildrenKeys(f)
-      end
-    end
-  end
-
-end
-
 local function setupFrames(self)
   self:SetParent(UIParent);
   self:SetWidth(272);
@@ -39,8 +5,16 @@ local function setupFrames(self)
   self:SetFrameStrata("HIGH");
   self:SetPoint("CENTER", -86, -254)
   self:SetBackdropColor(1, 0, 0, 0)
+  self:SetMovable(true)
+  self:EnableMouse(true)
+  self:RegisterForDrag("LeftButton")
+  self:SetScript("OnDragStart", self.StartMoving)
+  self:SetScript("OnDragStop", self.StopMovingOrSizing)
 
+  self.bar = CreateFrame("Frame", self:GetName().."_bar")
   self.bar:SetParent(self);
+  self.bar:SetFrameStrata("LOW");
+  self.bar:EnableMouse(false)
   self.bar:SetPoint("TOPLEFT", self, "TOPLEFT", 0, 0)
   self.bar:SetPoint("BOTTOMRIGHT", self, "BOTTOMRIGHT", 0, 0)
   self.bar:SetBackdropColor(0.5, 0.5, 0.5, 0)
@@ -202,13 +176,6 @@ local function closure()
     self:RegisterEvent("PLAYER_TARGET_CHANGED")
     self:RegisterEvent("PLAYER_ENTERING_WORLD")
 
-    self:SetMovable(true)
-    self:EnableMouse(true)
-    self:RegisterForDrag("LeftButton")
-    self:SetScript("OnDragStart", self.StartMoving)
-    self:SetScript("OnDragStop", self.StopMovingOrSizing)
-
-    setChildrenKeys(self)
     setupFrames(self)
     print("Welcome to ngorange. Commands: `/ngorange help`, `/ngorange show`, `/ngorange reset`.");
   end
@@ -229,6 +196,6 @@ local function closure()
   return onLoad, onSlash
 end
 
-ngorange_onload, ngorange_onslash = closure()
+ngorangeOnLoad, ngorangeOnSlash = closure()
 SLASH_NGORANGE1 = "/ngorange"
-SlashCmdList["NGORANGE"] = ngorange_onslash
+SlashCmdList["NGORANGE"] = ngorangeOnSlash

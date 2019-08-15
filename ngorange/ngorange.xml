@@ -2,19 +2,9 @@
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:schemaLocation="http://www.blizzard.com/wow/ui/
                         ..\..\FrameXML\UI.xsd">
-
   <Script file="ngorange.lua"/>
-
-  <Frame name="ngorange" frameStrata="high" enableMouse="true" movable="true" parent="UIParent">
-    <Scripts><OnLoad>ngorange_onload();</OnLoad></Scripts>
-    <Backdrop bgFile="Interface\ChatFrame\ChatFrameBackground" tile="false"/>
-    <Frames>
-
-      <Frame name="$parent_bar" enableMouse="false" frameStrata="LOW">
-      </Frame>
-
-    </Frames>
-    <Size x="0" y="0" />
+  <Frame name="ngorange">
+    <Scripts><OnLoad>ngorangeOnLoad();</OnLoad></Scripts>
   </Frame>
 
 </Ui>
