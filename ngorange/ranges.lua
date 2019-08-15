@@ -1,3 +1,6 @@
+-- Beware, the ranges from `CheckInteractDistance` are ranges to the center of the target
+-- the ranges from the spells are ranges to the side of the target. Those can't be mixed up
+
 local MAXRANGE = 43
 
 local function tribool(v)
@@ -16,48 +19,118 @@ end
 
 local function createRange(start, stop)
   local o = {}
+  local str, mul, add, dist
 
-  local function str(r)
-    return '('..tostring(r.start)..', '..tostring(r.stop)..')'
-  end
+  local function decompose_ranges(r0, r1)
+    local threshs = {}
 
-  local function mul(r0, r1)
-    local start = max(r0.start, r1.start)
-    local stop = min(r0.stop, r1.stop)
-
-    if start > stop then
-      -- /!\ I duknow if it happens, let's hide this naughty error!!
-      -- print('Faulty mul on', r0, r1);
-      start = stop
+    local function dist_lt(a, b)
+      return (a[1] == b[1]) and ((a[2] and 1 or 0) < (b[2] and 1 or 0)) or (a[1] < b[1])
     end
-    return createRange(start, stop)
+    local function dist_eq(a, b)
+      return (a[1] == b[1]) and (a[2] == b[2])
+    end
+    local function dist_le(a, b)
+      return (a[1] == b[1]) and ((a[2] and 1 or 0) <= (b[2] and 1 or 0)) or (a[1] < b[1])
+    end
+
+    for i, r in ipairs({r0, r1}) do
+      for _, s in ipairs(r) do
+        dist = {s.start, true, i}
+        setmetatable(dist, {__lt=dist_lt, __eq=dist_eq, __le=dist_le})
+        table.insert(threshs, dist)
+        dist = {s.stop, false, i}
+        setmetatable(dist, {__lt=dist_lt, __eq=dist_eq, __le=dist_le})
+        table.insert(threshs, dist)
+      end
+    end
+    table.sort(threshs)
+    return threshs
   end
 
-  o.start = start or 0
-  o.stop = stop or MAXRANGE
-  setmetatable(o, {__mul=mul, __tostring=str})
+  function str(r)
+    local strings = {}
+    for _, v in ipairs(r) do
+      table.insert(strings, '('..tostring(v.start)..', '..tostring(v.stop)..')')
+    end
+    return table.concat(strings, "&")
+  end
+
+  function mul(r0, r1)
+    -- Intersection
+    local statuses, begin, o
+    local threshs = decompose_ranges(r0, r1)
+
+    statuses = {}
+    o = {}
+    for _, t in ipairs(threshs) do
+      range, is_start, i = unpack(t)
+      statuses[i] = is_start
+      if is_start and statuses[1] and statuses[2] then
+        begin = range
+      elseif not is_start and begin then
+        table.insert(o, {start=begin, stop=range})
+        begin = nil
+      end
+    end
+
+    if table.getn(o) == 0 then
+      o = {{start=0, stop=MAXRANGE}}
+    end
+
+    setmetatable(o, {__mul=mul, __add=add, __tostring=str})
+    return o
+  end
+
+  function add(r0, r1)
+    -- Union
+    local statuses, begin, o
+    local threshs = decompose_ranges(r0, r1)
+
+    statuses = {}
+    o = {}
+    for _, t in ipairs(threshs) do
+      range, is_start, i = unpack(t)
+      statuses[i] = is_start
+      if is_start and begin == nil then
+        begin = range
+      elseif not is_start and begin then
+        table.insert(o, {start=begin, stop=range})
+        begin = nil
+      end
+    end
+
+    if table.getn(o) == 0 then
+      o = {{start=0, stop=MAXRANGE}}
+    end
+
+    setmetatable(o, {__mul=mul, __add=add, __tostring=str})
+    return o
+  end
+
+  o = {{start=start or 0, stop=stop or MAXRANGE}}
+  setmetatable(o, {__mul=mul, __add=add, __tostring=str})
   return o
 end
 
 local function createSpell(spellIdOrName)
   local o = {}
   local name, _, _, _, minrange, maxrange, id, _ = GetSpellInfo(spellIdOrName)
-  local can_discriminate_too_close_too_far = minrange < 28 - 3 and maxrange > 28 + 3
+
+  maxrange = min(maxrange, MAXRANGE)
+  minrange = max(0, min(minrange, maxrange))
 
   o.true_range = createRange(minrange, maxrange)
   local function call()
     local inrange = tribool(IsSpellInRange(name, "target")) -- /!\ does not use id!
     local possible = inrange ~= nil and UnitExists("target") and not UnitIsDeadOrGhost("target")
-    local below28 = tribool(CheckInteractDistance("target", 4))
 
     if possible and inrange then
       return createRange(minrange, maxrange)
     elseif possible and minrange == 0 then
       return createRange(maxrange, MAXRANGE)
-    elseif possible and can_discriminate_too_close_too_far and below28 then
-	return createRange(0, minrange)
-    elseif possible and can_discriminate_too_close_too_far and not below28 then
-      return createRange(maxrange, MAXRANGE)
+    elseif possible then
+      return createRange(0, minrange) + createRange(maxrange, MAXRANGE)
     else
       return createRange()
     end
@@ -78,22 +151,21 @@ local function createItem(itemIdOrName)
   assert(sname ~= nil)
   local _, _, _, _, minrange, maxrange, _, _ = GetSpellInfo(sid)
   assert(maxrange ~= nil)
-  local can_discriminate_too_close_too_far = minrange < 28 - 3 and maxrange > 28 + 3
+
+  maxrange = min(maxrange, MAXRANGE)
+  minrange = max(0, min(minrange, maxrange))
 
   o.true_range = createRange(minrange, maxrange)
   local function call()
     local inrange = tribool(IsItemInRange(itemIdOrName, "target"))
     local possible = inrange ~= nil and UnitExists("target") and not UnitIsDeadOrGhost("target")
-    local below28 = tribool(CheckInteractDistance("target", 4))
 
     if possible and inrange then
       return createRange(minrange, maxrange)
     elseif possible and minrange == 0 then
       return createRange(maxrange, MAXRANGE)
-    elseif possible and can_discriminate_too_close_too_far and below28 then
-	return createRange(0, minrange)
-    elseif possible and can_discriminate_too_close_too_far and not below28 then
-      return createRange(maxrange, MAXRANGE)
+    elseif possible then
+      return createRange(0, minrange) + createRange(maxrange, MAXRANGE)
     else
       return createRange()
     end
@@ -115,11 +187,12 @@ local function createInteractDistance(idx)
     [3] = "Duel",
     [4] = "Follow",
   }
+  local _, _, _, v = GetBuildInfo()
   local maxranges = {
-    [1] = 10, -- 28y starting from wow version ~3.0
-    [2] = 11,
-    [3] = 10,
-    [4] = 28,
+    [1] = (v <= 30000) and 10 or 28; -- 10 -> 28
+    [2] = 11, -- 11.11 -> 8or7
+    [3] = 10, -- 9.9 -> 7or8
+    [4] = 28, -- 28 -> 28
   }
 
   o.true_range = createRange(0, maxranges[idx])
@@ -149,9 +222,9 @@ local function createUnitInRange()
     local test = UnitInRange("target")
     if UnitInParty("target") or UnitInRaid("target") ~= nil then
       if UnitInRange("target") then
-	return createRange(0, 40)
+        return createRange(0, 40)
       else
-	return createRange(40, MAXRANGE)
+        return createRange(40, MAXRANGE)
       end
     else
       return createRange()
@@ -190,14 +263,14 @@ local function inventoryIter()
     repeat
       -- Advance cursor to next item or `return nil`
       if bagId > 4 then
-	return nil
+        return nil
       elseif slotId <= bagSize then
-	_, _, _, _, _, _, link, _, _, id = GetContainerItemInfo(bagId, slotId)
-	slotId = slotId + 1
+        _, _, _, _, _, _, link, _, _, id = GetContainerItemInfo(bagId, slotId)
+        slotId = slotId + 1
       else
-	bagId = bagId + 1
-	bagSize = GetContainerNumSlots(bagId) or 0
-	slotId = 1
+        bagId = bagId + 1
+        bagSize = GetContainerNumSlots(bagId) or 0
+        slotId = 1
       end
     until id ~= nil
     name = string.gsub(link, "(.+)%[(.-)%](.+)", "%2")
@@ -207,15 +280,18 @@ end
 
 local function createRangeTests()
   local tests = {
-    createInteractDistance(4),
-    createInteractDistance(1),
     createUnitInRange(),
   }
+  local seen = {}
 
   for _, name, subtext in spellbookIter() do
     local _, _, _, _, minRange, maxRange, spellId = GetSpellInfo(name, subtext)
     if minRange ~= nil and maxRange ~= nil and minRange < maxRange then
-      table.insert(tests, createSpell(spellId))
+      test = createSpell(spellId)
+      if seen[tostring(test)] == nil then
+        seen[tostring(test)] = 42
+        table.insert(tests, test)
+      end
     end
   end
   for bagId, slotId, name, id in inventoryIter() do
@@ -223,7 +299,11 @@ local function createRangeTests()
     if sname then
       local _, _, _, _, minRange, maxRange, _ = GetSpellInfo(sid)
       if minRange ~= nil and maxRange ~= nil and minRange < maxRange then
-  	table.insert(tests, createItem(id))
+	test = createItem(id)
+	if seen[tostring(test)] == nil then
+	  seen[tostring(test)] = 42
+	  table.insert(tests, test)
+	end
       end
     end
   end
