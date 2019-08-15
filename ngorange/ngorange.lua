@@ -4,7 +4,6 @@ local function setupFrames(self)
   self:SetHeight(28);
   self:SetFrameStrata("HIGH");
   self:SetPoint("CENTER", -86, -254)
-  self:SetBackdropColor(1, 0, 0, 0)
   self:SetMovable(true)
   self:EnableMouse(true)
   self:RegisterForDrag("LeftButton")
@@ -17,14 +16,34 @@ local function setupFrames(self)
   self.bar:EnableMouse(false)
   self.bar:SetPoint("TOPLEFT", self, "TOPLEFT", 0, 0)
   self.bar:SetPoint("BOTTOMRIGHT", self, "BOTTOMRIGHT", 0, 0)
-  self.bar:SetBackdropColor(0.5, 0.5, 0.5, 0)
   self.bar:SetBackdrop({
-      bgFile = "Interface/Tooltips/UI-Tooltip-Background",
-      edgeFile = "Interface/DialogFrame/UI-DialogBox-Border",
-      tile = false, tileSize = 16, edgeSize = 15,
-      insets = { left = 2, right = 2, top = 2, bottom = 2}
+      bgFile="Interface/DialogFrame/UI-DialogBox-Background",
+      edgeFile="Interface/DialogFrame/UI-DialogBox-Border",
+      tile=false, tileSize=16,
+      edgeSize=15,
+      insets={left=5, right=5, top=5, bottom=5}
   })
-  self.bar:SetAlpha(0.45);
+  self.bar:SetAlpha(1);
+
+  local r, g, b = 0.7, 0, 0
+  local a0, a1 = 0, 1
+  self.bar.texture0 = self.bar:CreateTexture()
+  self.bar.texture0:SetColorTexture(r, g, b)
+  self.bar.texture0:SetGradientAlpha("HORIZONTAL",
+				     1, 1, 1, a0,
+				     1, 1, 1, a1)
+  self.bar.texture0:SetAlpha(1)
+
+  self.bar.texture1 = self.bar:CreateTexture()
+  self.bar.texture1:SetColorTexture(r, g, b)
+  self.bar.texture1:SetAlpha(a1)
+
+  self.bar.texture2 = self.bar:CreateTexture()
+  self.bar.texture2:SetColorTexture(r, g, b)
+  self.bar.texture2:SetGradientAlpha("HORIZONTAL",
+				     1, 1, 1, a1,
+				     1, 1, 1, a0)
+  self.bar.texture2:SetAlpha(1)
 
   self.cursors = {}
 
@@ -36,10 +55,8 @@ local function setupFrames(self)
     cursor:SetFrameStrata("DIALOG");
     cursor:SetPoint("TOPLEFT", self.bar, "TOPLEFT", 0, 8)
     cursor:SetBackdrop({
-        bgFile = "Interface/Tooltips/UI-Tooltip-Background",
         edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
-        tile = false, tileSize = 16, edgeSize = 15,
-        insets = {left = 3, right = 3, top = 3, bottom = 3}
+	edgeSize = 15,
     })
     cursor:SetHeight(18);
     cursor:SetAlpha(1);
@@ -54,6 +71,44 @@ local function setupFrames(self)
     return cursor
   end
   setmetatable(self.cursors, {__index=new_cursor})
+end
+
+function moveBg(self, range)
+  local V, W = 50, 50
+  local barBorderW, barBorderH = 8, 8
+  local totalWidth = self:GetWidth() - barBorderW * 2
+  local o = range[1]
+
+  left = o.start / NGORANGEMAXRANGE * totalWidth
+  right = o.stop / NGORANGEMAXRANGE * totalWidth
+  middle = (left + right) / 2
+  width = right - left
+
+  -- Apply a minimal width and a bound constraint
+  width = max(1, width)
+  left = middle - width / 2
+  right = middle + width / 2
+  overflow_left = -min(0, left)
+  overflow_right = -min(0, totalWidth - right)
+  left = left + overflow_left - overflow_right
+  right = right - overflow_right + overflow_left
+  middle = (left + right) / 2
+
+  self.bar.texture0:SetPoint("BOTTOMLEFT", self.bar, "BOTTOMLEFT",
+			     barBorderW, barBorderH - 1)
+  self.bar.texture0:SetPoint("TOPRIGHT", self.bar, "TOPLEFT",
+			       barBorderW + left, -barBorderH)
+
+  self.bar.texture1:SetPoint("BOTTOMLEFT", self.bar, "BOTTOMLEFT",
+			     barBorderW + left, barBorderH - 1)
+  self.bar.texture1:SetPoint("TOPRIGHT", self.bar, "TOPLEFT",
+			     barBorderW + right, -barBorderH)
+
+  self.bar.texture2:SetPoint("BOTTOMLEFT", self.bar, "BOTTOMLEFT",
+			     barBorderW + right, barBorderH - 1)
+  self.bar.texture2:SetPoint("TOPRIGHT", self.bar, "TOPRIGHT",
+			       -barBorderW, -barBorderH)
+
 end
 
 function moveCursor(self, range)
@@ -95,18 +150,19 @@ function moveCursor(self, range)
 end
 
 local function help()
-  print("| >>> ngorange, a wow-classic wow-retail addon to approximate the target's distance");
+  print("| >>> ngorange, a wow-classic and wow-retail addon to approximate the target's distance");
   print('| Works on all targets');
-  print('| The 3 sources of distance:');
+  print("| The cursor track the distance to the target's hitbox using those informations:");
   print('| - Is the spell in range (works with all spells in your spellbook)');
   print('| - Is the item in range (works with all items in your bags that can be casted on a target)');
-  -- print('| - Is your target close enough to be followed (28 yards) (works with all units)');
-  -- print('| - Is your target close enough to be inspected (10 yards) (works with all units)');
   print('| - Is your target close enough to be healed (40 yards) (works with all units in party/raid)');
+  print("| The red background tracks the distance to the target's center using those informations:");
+  print('| - Is your target close enough to be followed (28 yards) (works with all units)');
+  print('| - Is your target close enough to be duelled with (10 yards) (works with all units)');
   print('|  ');
   print('| /ngorange help -> Print this message');
   print('| /ngorange reset -> Reset the spells and items monitored (useful when new spells or new items)');
-  print("| /ngorange show -> Show what is monitored to approximate the target's distance");
+  print("| /ngorange show -> Show what is monitored to approximate the target's hitbox distance");
   print('|  ');
   print('| Developped by ngo in august-2019 on wow-classic 1.13 and wow-retail 8.2.');
 end
@@ -115,17 +171,18 @@ local function closure()
   local self
   local has_target = UnitExists("target")
   local range_tests
+  local centroidRangeTests = ngorangeCreateCentroidRangeTests()
 
   local function primeTests()
     if range_tests == nil then
-      range_tests = ngorangeCreateRangeTests() -- no spellbook in PLAYER_ENTERING_WORLD
+      range_tests = ngorangeCreateHitboxRangeTests() -- no spellbook in PLAYER_ENTERING_WORLD
     end
   end
 
   local function onSlash(msg)
     primeTests()
     if msg == 'reset' then
-      range_tests = ngorangeCreateRangeTests()
+      range_tests = ngorangeCreateHitboxRangeTests()
     elseif msg == 'show' then
       for k, v in ipairs(range_tests) do
         print('->', v);
@@ -143,10 +200,18 @@ local function closure()
     assert(range_tests ~= nil)
     r = ngorangeCreateRange()
     for k, v in ipairs(range_tests) do
+      -- TODO: Perform test only if it may refine `r`
       s = v()
       r = r * s
     end
     moveCursor(self, r)
+
+    r = ngorangeCreateRange()
+    for k, v in ipairs(centroidRangeTests) do
+      s = v()
+      r = r * s
+    end
+    moveBg(self, r)
   end
 
   local function onEvent(_, event)
@@ -157,14 +222,17 @@ local function closure()
     if (event == "PLAYER_TARGET_CHANGED") then
       primeTests()
       has_target = UnitExists("target")
-      if has_target then
-        for _, cursor in ipairs(self.cursors) do
-          cursor:Show()
-        end
-      else
+      if not has_target then
         for _, cursor in ipairs(self.cursors) do
           cursor:Hide()
         end
+	self.bar.texture0:Hide()
+	self.bar.texture1:Hide()
+	self.bar.texture2:Hide()
+      else
+	self.bar.texture0:Show()
+	self.bar.texture1:Show()
+	self.bar.texture2:Show()
       end
     end
   end

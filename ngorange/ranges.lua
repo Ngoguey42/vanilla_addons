@@ -75,6 +75,8 @@ local function createRange(start, stop)
     end
 
     if table.getn(o) == 0 then
+      -- The intersection is empty, let's hide this naughty bug that may never
+      -- happend to avoid a crash.
       o = {{start=0, stop=MAXRANGE}}
     end
 
@@ -100,9 +102,7 @@ local function createRange(start, stop)
       end
     end
 
-    if table.getn(o) == 0 then
-      o = {{start=0, stop=MAXRANGE}}
-    end
+    assert(table.getn(o) > 0)
 
     setmetatable(o, {__mul=mul, __add=add, __tostring=str})
     return o
@@ -188,11 +188,12 @@ local function createInteractDistance(idx)
     [4] = "Follow",
   }
   local _, _, _, v = GetBuildInfo()
+  -- TODO: Verify ranges in 1.12 and 8.2
   local maxranges = {
-    [1] = (v <= 30000) and 10 or 28; -- 10 -> 28
-    [2] = 11, -- 11.11 -> 8or7
-    [3] = 10, -- 9.9 -> 7or8
-    [4] = 28, -- 28 -> 28
+    [1] = (v <= 30000) and 10 or 28,
+    [2] = (v <= 30000) and 11 or 8,
+    [3] = (v <= 30000) and 10 or 8,
+    [4] = 28,
   }
 
   o.true_range = createRange(0, maxranges[idx])
@@ -277,8 +278,14 @@ local function inventoryIter()
     return bagId, slotId - 1, name, id
   end
 end
+local function createCentroidRangeTests()
+  return {
+    createInteractDistance(2),
+    createInteractDistance(4),
+  }
+end
 
-local function createRangeTests()
+local function createHitboxRangeTests()
   local tests = {
     createUnitInRange(),
   }
@@ -309,6 +316,7 @@ local function createRangeTests()
   end
   return tests
 end
-ngorangeCreateRangeTests = createRangeTests
+ngorangeCreateHitboxRangeTests = createHitboxRangeTests
 ngorangeCreateRange = createRange
+ngorangeCreateCentroidRangeTests = createCentroidRangeTests
 NGORANGEMAXRANGE = MAXRANGE
