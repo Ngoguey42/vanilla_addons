@@ -1,7 +1,10 @@
 -- Beware, the ranges from `CheckInteractDistance` are ranges to the center of the target
 -- the ranges from the spells are ranges to the side of the target. Those can't be mixed up
 
-local MAXRANGE = 43
+local MAXRANGE = 55
+
+local isClassic = select(4, GetBuildInfo()) < 30000
+local isRetail = not isClassic
 
 local function tribool(v)
   if v == nil then
@@ -187,12 +190,11 @@ local function createInteractDistance(idx)
     [3] = "Duel",
     [4] = "Follow",
   }
-  local _, _, _, v = GetBuildInfo()
   -- TODO: Verify ranges in 1.12 and 8.2
   local maxranges = {
-    [1] = (v <= 30000) and 10 or 28,
-    [2] = (v <= 30000) and 11 or 8,
-    [3] = (v <= 30000) and 10 or 8,
+    [1] = isClassic and 10 or 28,
+    [2] = isClassic and 11 or 8,
+    [3] = isClassic and 10 or 8,
     [4] = 28,
   }
 
@@ -278,11 +280,41 @@ local function inventoryIter()
     return bagId, slotId - 1, name, id
   end
 end
+
+function toyBoxIter()
+  local i = 1
+  local itemId, itemName
+
+  return function ()
+    itemId = C_ToyBox.GetToyFromIndex(i)
+    itemName = GetItemInfo(itemId)
+    -- print(i, itemId, itemName);
+    i = i + 1
+    if itemId == nil or itemId < 0 then
+      return nil
+    else
+      return i - 1, itemId, itemName
+    end
+  end
+
+end
+
 local function createCentroidRangeTests()
   return {
     createInteractDistance(2),
     createInteractDistance(4),
   }
+end
+
+local function resetToyFilters()
+  for i=1,20 do
+    pcall(C_ToyBox.SetExpansionTypeFilter, i, true)
+    pcall(C_ToyBox.SetSourceTypeFilter, i, true)
+  end
+  C_ToyBox.SetCollectedShown(true)
+  C_ToyBox.SetUncollectedShown(true)
+  C_ToyBox.SetUnusableShown(true)
+  C_ToyBox.SetFilterString("")
 end
 
 local function createHitboxRangeTests()
@@ -314,6 +346,23 @@ local function createHitboxRangeTests()
       end
     end
   end
+  if isRetail then
+    resetToyFilters()
+    for toyId, id, name in toyBoxIter() do
+      local sname, sid = GetItemSpell(id)
+      if sname then
+	local _, _, _, _, minRange, maxRange, _, _ = GetSpellInfo(sid)
+	if minRange ~= nil and maxRange ~= nil and minRange < maxRange then
+	  test = createItem(id)
+	  if seen[tostring(test)] == nil then
+	    seen[tostring(test)] = 42
+	    table.insert(tests, test)
+	  end
+	end
+      end
+    end
+  end
+
   return tests
 end
 ngorangeCreateHitboxRangeTests = createHitboxRangeTests

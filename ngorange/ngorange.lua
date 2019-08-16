@@ -25,6 +25,7 @@ local function setupFrames(self)
   })
   self.bar:SetAlpha(1);
 
+  -- TODO: Fixed gradient width
   local r, g, b = 0.7, 0, 0
   local a0, a1 = 0, 1
   self.bar.texture0 = self.bar:CreateTexture()
@@ -112,11 +113,17 @@ function moveBg(self, range)
 end
 
 function moveCursor(self, range)
-  local left, right, middle, width, overflow_left, overflow_right
+  local left, right, middle, width, overflow_left, overflow_right, minWidth
   local barBorder = 4
   local totalWidth = self:GetWidth() - barBorder * 2
 
   for i, o in ipairs(range) do
+    if o.start >= 10 then
+      minWidth = 33
+    else
+      minWidth = 25
+    end
+
     left = o.start / NGORANGEMAXRANGE * totalWidth
     right = o.stop / NGORANGEMAXRANGE * totalWidth
     middle = (left + right) / 2
@@ -124,7 +131,7 @@ function moveCursor(self, range)
 
     -- Apply a minimal width and a bound constraint
     -- TODO: Handle overlaps between cursors...
-    width = max(33, width)
+    width = max(minWidth, width)
     left = middle - width / 2
     right = middle + width / 2
     overflow_left = -min(0, left)
@@ -183,6 +190,9 @@ local function closure()
     primeTests()
     if msg == 'reset' then
       range_tests = ngorangeCreateHitboxRangeTests()
+      for k, v in ipairs(range_tests) do
+        print('->', v);
+      end
     elseif msg == 'show' then
       for k, v in ipairs(range_tests) do
         print('->', v);
@@ -193,6 +203,7 @@ local function closure()
   end
 
   local function onUpdate()
+    -- TODO: Refresh rate
     local s, r
     if not has_target then
       return
@@ -249,16 +260,35 @@ local function closure()
   end
 
   function LOL() -- global for debug
-    print("********************");
-    primeTests()
 
-    r = ngorangeCreateRange()
-    for k, v in ipairs(range_tests) do
-      s = v()
-      r = r * s
-      print(v, s, r);
+    for i=1, C_ToyBox.GetNumToys() do
+      local itemId = C_ToyBox.GetToyFromIndex(i)
+      if itemId == -1 then
+	print('-1 at', i);
+	break
+      end
+      local name = GetItemInfo(itemId)
+      local sname, sid = GetItemSpell(itemId)
+      local _, _, _, _, minrange, maxrange, _, _ = GetSpellInfo(sid)
+      local usable = C_ToyBox.IsToyUsable(itemId)
+      local inrange = IsItemInRange(itemId, "target")
+      if minrange ~= maxrange and inrange ~= nil then
+      	-- print(i, inrange, name, sname, minrange, maxrange);
+      end
     end
-    moveCursor(self, r)
+    -- i = 0
+    -- C_ToyBox.GetToyFromIndex
+
+  --   print("********************");
+  --   primeTests()
+
+  --   r = ngorangeCreateRange()
+  --   for k, v in ipairs(range_tests) do
+  --     s = v()
+  --     r = r * s
+  --     print(v, s, r);
+  --   end
+  --   moveCursor(self, r)
   end
 
   return onLoad, onSlash
