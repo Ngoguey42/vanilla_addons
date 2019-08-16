@@ -118,14 +118,9 @@ function moveCursor(self, range)
   local totalWidth = self:GetWidth() - barBorder * 2
 
   for i, o in ipairs(range) do
-    -- minWidth = 27
-    -- if o.start >= 10 then
-    --   minWidth = minWidth + 8
-    -- end
-    -- if o.stop >= 10 then
-    --   minWidth = minWidth + 8
-    -- end
-    minWidth = 33
+    minWidth = 19 + (floor(log10(max(1, o.start))) + 1) * 8
+    -- TODO: Should the full range be shown?
+    --       Is it always a good idea? (UX speaking)
 
     left = o.start / NGORANGEMAXRANGE * totalWidth
     right = o.stop / NGORANGEMAXRANGE * totalWidth

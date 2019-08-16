@@ -1,6 +1,10 @@
 -- Beware, the ranges from `CheckInteractDistance` are ranges to the center of the target
 -- the ranges from the spells are ranges to the side of the target. Those can't be mixed up
 
+-- TODO: Move maxrange to something else than a constant (like a persistan user config)
+--       Because mind-vision 50y
+--       Some toy 150y (non linear bar for that use case ?)
+
 local MAXRANGE = 55
 
 local isClassic = select(4, GetBuildInfo()) < 30000
