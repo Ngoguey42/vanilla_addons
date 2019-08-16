@@ -118,11 +118,14 @@ function moveCursor(self, range)
   local totalWidth = self:GetWidth() - barBorder * 2
 
   for i, o in ipairs(range) do
-    if o.start >= 10 then
-      minWidth = 33
-    else
-      minWidth = 25
-    end
+    -- minWidth = 27
+    -- if o.start >= 10 then
+    --   minWidth = minWidth + 8
+    -- end
+    -- if o.stop >= 10 then
+    --   minWidth = minWidth + 8
+    -- end
+    minWidth = 33
 
     left = o.start / NGORANGEMAXRANGE * totalWidth
     right = o.stop / NGORANGEMAXRANGE * totalWidth
@@ -144,7 +147,8 @@ function moveCursor(self, range)
     self.cursors[i]:SetPoint("TOP", self, "TOPLEFT", middle + barBorder, -barBorder);
     self.cursors[i]:SetPoint("BOTTOM", self, "BOTTOMLEFT", middle + barBorder, barBorder);
     self.cursors[i]:SetWidth(width);
-    self.cursors[i].text:SetText(o.start.."+");
+    -- self.cursors[i].text:SetText(o.start.."-"..o.stop);
+    self.cursors[i].text:SetText(o.start.."+")
   end
   for i, _ in ipairs(self.cursors) do
     if i <= table.getn(range) then
@@ -162,6 +166,7 @@ local function help()
   print("| The cursor track the distance to the target's hitbox using those informations:");
   print('| - Is the spell in range (works with all spells in your spellbook)');
   print('| - Is the item in range (works with all items in your bags that can be casted on a target)');
+  print('| - Is the toy in range (works on wow-retail with all toys (not just the ones you own) that can be casted on a target)');
   print('| - Is your target close enough to be healed (40 yards) (works with all units in party/raid)');
   print("| The red background tracks the distance to the target's center using those informations:");
   print('| - Is your target close enough to be followed (28 yards) (works with all units)');
@@ -189,10 +194,8 @@ local function closure()
   local function onSlash(msg)
     primeTests()
     if msg == 'reset' then
+      print('ngorange range tests reset');
       range_tests = ngorangeCreateHitboxRangeTests()
-      for k, v in ipairs(range_tests) do
-        print('->', v);
-      end
     elseif msg == 'show' then
       for k, v in ipairs(range_tests) do
         print('->', v);
@@ -211,7 +214,12 @@ local function closure()
     assert(range_tests ~= nil)
     r = ngorangeCreateRange()
     for k, v in ipairs(range_tests) do
+      -- When using toys now: ~14k tests per second (~230 tests per update)
+      -- ~57k tests per second will get the fps down to 25 from 60
+      -- The code currently can't be used for a full party tracking
+
       -- TODO: Perform test only if it may refine `r`
+      -- TODO: Dynamically order tests with an heuristic
       s = v()
       r = r * s
     end
@@ -260,35 +268,16 @@ local function closure()
   end
 
   function LOL() -- global for debug
+    print("********************");
+    primeTests()
 
-    for i=1, C_ToyBox.GetNumToys() do
-      local itemId = C_ToyBox.GetToyFromIndex(i)
-      if itemId == -1 then
-	print('-1 at', i);
-	break
-      end
-      local name = GetItemInfo(itemId)
-      local sname, sid = GetItemSpell(itemId)
-      local _, _, _, _, minrange, maxrange, _, _ = GetSpellInfo(sid)
-      local usable = C_ToyBox.IsToyUsable(itemId)
-      local inrange = IsItemInRange(itemId, "target")
-      if minrange ~= maxrange and inrange ~= nil then
-      	-- print(i, inrange, name, sname, minrange, maxrange);
-      end
+    r = ngorangeCreateRange()
+    for k, v in ipairs(range_tests) do
+      s = v()
+      r = r * s
+      print(v, s, r);
     end
-    -- i = 0
-    -- C_ToyBox.GetToyFromIndex
-
-  --   print("********************");
-  --   primeTests()
-
-  --   r = ngorangeCreateRange()
-  --   for k, v in ipairs(range_tests) do
-  --     s = v()
-  --     r = r * s
-  --     print(v, s, r);
-  --   end
-  --   moveCursor(self, r)
+    moveCursor(self, r)
   end
 
   return onLoad, onSlash
