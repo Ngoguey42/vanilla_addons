@@ -1,14 +1,10 @@
 -- Beware, the ranges from `CheckInteractDistance` are ranges to the center of the target
 -- the ranges from the spells are ranges to the side of the target. Those can't be mixed up
 
--- TODO: Move maxrange to something else than a constant (like a persistan user config)
---       Because mind-vision 50y
---       Some toy 150y (non linear bar for that use case ?)
-
-local MAXRANGE = 55
-
 local isClassic = select(4, GetBuildInfo()) < 30000
 local isRetail = not isClassic
+local INF = 1 / 0
+local rangeLib = {}
 
 local function tribool(v)
   if v == nil then
@@ -24,225 +20,17 @@ local function tribool(v)
   end
 end
 
-local function createRange(start, stop)
-  local o = {}
-  local str, mul, add, dist
-
-  local function decompose_ranges(r0, r1)
-    local threshs = {}
-
-    local function dist_lt(a, b)
-      return (a[1] == b[1]) and ((a[2] and 1 or 0) < (b[2] and 1 or 0)) or (a[1] < b[1])
-    end
-    local function dist_eq(a, b)
-      return (a[1] == b[1]) and (a[2] == b[2])
-    end
-    local function dist_le(a, b)
-      return (a[1] == b[1]) and ((a[2] and 1 or 0) <= (b[2] and 1 or 0)) or (a[1] < b[1])
-    end
-
-    for i, r in ipairs({r0, r1}) do
-      for _, s in ipairs(r) do
-        dist = {s.start, true, i}
-        setmetatable(dist, {__lt=dist_lt, __eq=dist_eq, __le=dist_le})
-        table.insert(threshs, dist)
-        dist = {s.stop, false, i}
-        setmetatable(dist, {__lt=dist_lt, __eq=dist_eq, __le=dist_le})
-        table.insert(threshs, dist)
-      end
-    end
-    table.sort(threshs)
-    return threshs
+local function toSortedSet(tab)
+  local a, b = {}, {}
+  for _, v in ipairs(tab) do
+    assert(type(v) == type(42))
+    a[v] = 1
   end
-
-  function str(r)
-    local strings = {}
-    for _, v in ipairs(r) do
-      table.insert(strings, '('..tostring(v.start)..', '..tostring(v.stop)..')')
-    end
-    return table.concat(strings, "&")
+  for k, _ in pairs(a) do
+    table.insert(b, k)
   end
-
-  function mul(r0, r1)
-    -- Intersection
-    local statuses, begin, o
-    local threshs = decompose_ranges(r0, r1)
-
-    statuses = {}
-    o = {}
-    for _, t in ipairs(threshs) do
-      range, is_start, i = unpack(t)
-      statuses[i] = is_start
-      if is_start and statuses[1] and statuses[2] then
-        begin = range
-      elseif not is_start and begin then
-        table.insert(o, {start=begin, stop=range})
-        begin = nil
-      end
-    end
-
-    if table.getn(o) == 0 then
-      -- The intersection is empty, let's hide this naughty bug that may never
-      -- happend to avoid a crash.
-      o = {{start=0, stop=MAXRANGE}}
-    end
-
-    setmetatable(o, {__mul=mul, __add=add, __tostring=str})
-    return o
-  end
-
-  function add(r0, r1)
-    -- Union
-    local statuses, begin, o
-    local threshs = decompose_ranges(r0, r1)
-
-    statuses = {}
-    o = {}
-    for _, t in ipairs(threshs) do
-      range, is_start, i = unpack(t)
-      statuses[i] = is_start
-      if is_start and begin == nil then
-        begin = range
-      elseif not is_start and begin then
-        table.insert(o, {start=begin, stop=range})
-        begin = nil
-      end
-    end
-
-    assert(table.getn(o) > 0)
-
-    setmetatable(o, {__mul=mul, __add=add, __tostring=str})
-    return o
-  end
-
-  o = {{start=start or 0, stop=stop or MAXRANGE}}
-  setmetatable(o, {__mul=mul, __add=add, __tostring=str})
-  return o
-end
-
-local function createSpell(spellIdOrName)
-  local o = {}
-  local name, _, _, _, minrange, maxrange, id, _ = GetSpellInfo(spellIdOrName)
-
-  maxrange = min(maxrange, MAXRANGE)
-  minrange = max(0, min(minrange, maxrange))
-
-  o.true_range = createRange(minrange, maxrange)
-  local function call()
-    local inrange = tribool(IsSpellInRange(name, "target")) -- /!\ does not use id!
-    local possible = inrange ~= nil and UnitExists("target") and not UnitIsDeadOrGhost("target")
-
-    if possible and inrange then
-      return createRange(minrange, maxrange)
-    elseif possible and minrange == 0 then
-      return createRange(maxrange, MAXRANGE)
-    elseif possible then
-      return createRange(0, minrange) + createRange(maxrange, MAXRANGE)
-    else
-      return createRange()
-    end
-  end
-  local function str()
-    return name..':'..id..'@'..minrange..'-'..maxrange..'y'
-  end
-
-  setmetatable(o, {__call=call, __tostring=str})
-  return o
-end
-
-local function createItem(itemIdOrName)
-  local o = {}
-
-  local name = GetItemInfo(itemIdOrName)
-  local sname, sid = GetItemSpell(itemIdOrName)
-  assert(sname ~= nil)
-  local _, _, _, _, minrange, maxrange, _, _ = GetSpellInfo(sid)
-  assert(maxrange ~= nil)
-
-  maxrange = min(maxrange, MAXRANGE)
-  minrange = max(0, min(minrange, maxrange))
-
-  o.true_range = createRange(minrange, maxrange)
-  local function call()
-    local inrange = tribool(IsItemInRange(itemIdOrName, "target"))
-    local possible = inrange ~= nil and UnitExists("target") and not UnitIsDeadOrGhost("target")
-
-    if possible and inrange then
-      return createRange(minrange, maxrange)
-    elseif possible and minrange == 0 then
-      return createRange(maxrange, MAXRANGE)
-    elseif possible then
-      return createRange(0, minrange) + createRange(maxrange, MAXRANGE)
-    else
-      return createRange()
-    end
-  end
-  local function str()
-    local s = name..':'..itemIdOrName..'('..sname..':'..sid..')@'..minrange..'-'..maxrange..'y'
-    return s
-  end
-
-  setmetatable(o, {__call=call, __tostring=str})
-  return o
-end
-
-local function createInteractDistance(idx)
-  local o = {}
-  local names = {
-    [1] = "Inspect",
-    [2] = "Trade",
-    [3] = "Duel",
-    [4] = "Follow",
-  }
-  -- TODO: Verify ranges in 1.12 and 8.2
-  local maxranges = {
-    [1] = isClassic and 10 or 28,
-    [2] = isClassic and 11 or 8,
-    [3] = isClassic and 10 or 8,
-    [4] = 28,
-  }
-
-  o.true_range = createRange(0, maxranges[idx])
-  local function call()
-    local test = CheckInteractDistance("target", idx)
-    if test == 1 or test == true then
-      return createRange(0, maxranges[idx])
-    elseif UnitExists("target") then
-      return createRange(maxranges[idx], MAXRANGE)
-    else
-      return createRange()
-    end
-  end
-  local function str()
-    return names[idx]..'@'..'0-'..maxranges[idx]..'y'
-  end
-
-  setmetatable(o, {__call=call, __tostring=str})
-  return o
-end
-
-local function createUnitInRange()
-  local o = {}
-
-  o.true_range = createRange(0, 40)
-  local function call()
-    local test = UnitInRange("target")
-    if UnitInParty("target") or UnitInRaid("target") ~= nil then
-      if UnitInRange("target") then
-        return createRange(0, 40)
-      else
-        return createRange(40, MAXRANGE)
-      end
-    else
-      return createRange()
-    end
-  end
-  local function str()
-    return 'unitInRange@0-40y'
-  end
-
-  setmetatable(o, {__call=call, __tostring=str})
-  return o
+  table.sort(b)
+  return b
 end
 
 local function spellbookIter()
@@ -285,14 +73,13 @@ local function inventoryIter()
   end
 end
 
-function toyBoxIter()
+local function toyBoxIter()
   local i = 1
   local itemId, itemName
 
   return function ()
     itemId = C_ToyBox.GetToyFromIndex(i)
     itemName = GetItemInfo(itemId)
-    -- print(i, itemId, itemName);
     i = i + 1
     if itemId == nil or itemId < 0 then
       return nil
@@ -301,13 +88,6 @@ function toyBoxIter()
     end
   end
 
-end
-
-local function createCentroidRangeTests()
-  return {
-    createInteractDistance(2),
-    createInteractDistance(4),
-  }
 end
 
 local function resetToyFilters()
@@ -321,19 +101,120 @@ local function resetToyFilters()
   C_ToyBox.SetFilterString("")
 end
 
-local function createHitboxRangeTests()
-  local tests = {
-    createUnitInRange(),
+rangeLib.createSpellInfo = function(id)
+  local name, _, _, _, minrange, maxrange, id, _ = GetSpellInfo(id)
+  local o = {}
+
+  o.name = name
+  o.id = id
+  o.minrange = minrange
+  o.maxrange = maxrange
+  o.test = function(unit)
+    return tribool(IsSpellInRange(name, unit)) -- /!\ Does no use id!
+  end
+  local function str()
+    return name..':'..id..'@'..minrange..'-'..maxrange..'y'
+  end
+  setmetatable(o, {__tostring=str})
+
+  return o
+end
+
+rangeLib.createItemInfo = function(id)
+  local o = {}
+
+  o.name = GetItemInfo(id)
+  o.id = id
+  o.spell = rangeLib.createSpellInfo(select(2, GetItemSpell(id)))
+  o.minrange = o.spell.minrange
+  o.maxrange = o.spell.maxrange
+  o.test = function(unit)
+    return tribool(IsItemInRange(id, unit))
+  end
+  local function str()
+    return o.name..':'..id..'@'..o.minrange..'-'..o.maxrange..'y'
+  end
+  setmetatable(o, {__tostring=str})
+
+  return o
+end
+
+rangeLib.createUnitInRangeInfo = function()
+  local o = {}
+
+  o.minrange = 0
+  o.maxrange = 40
+  o.test = function(unit)
+    if UnitInParty(unit) or UnitInRaid(unit) ~= nil then
+      return tribool(UnitInRange(unit))
+    else
+      return nil
+    end
+    return t
+  end
+  local function str()
+    return 'unitInRange@0-40y'
+  end
+
+  setmetatable(o, {__tostring=str})
+  return o
+end
+
+rangeLib.createInteractDistanceInfo = function(idx)
+  -- TODO: Verify ranges in 1.12 and 8.2
+  local names = {
+    [1] = "Inspect",
+    [2] = "Trade",
+    [3] = "Duel",
+    [4] = "Follow",
   }
+  local maxranges = {
+    [1] = isClassic and 10 or 28,
+    [2] = isClassic and 11 or 8,
+    [3] = isClassic and 10 or 8,
+    [4] = 28,
+  }
+  local o = {}
+  o.minrange = 0
+  o.name = names[idx]
+  o.maxrange = maxranges[idx]
+
+
+  o.test = function(unit)
+    if UnitExists(unit) then
+      return tribool(CheckInteractDistance(unit, idx))
+    else
+      return nil
+    end
+  end
+  local function str()
+    return o.name..'@'..'0-'..o.maxrange..'y'
+  end
+
+  setmetatable(o, {__tostring=str})
+  return o
+end
+
+rangeLib.createCentroidRangeInfos = function()
+  return {
+    rangeLib.createInteractDistanceInfo(2),
+    rangeLib.createInteractDistanceInfo(4),
+  }
+end
+
+rangeLib.createHitboxRangeInfos = function()
   local seen = {}
+  local infos = {
+    rangeLib.createUnitInRangeInfo()
+  }
 
   for _, name, subtext in spellbookIter() do
     local _, _, _, _, minRange, maxRange, spellId = GetSpellInfo(name, subtext)
     if minRange ~= nil and maxRange ~= nil and minRange < maxRange then
-      test = createSpell(spellId)
+      test = rangeLib.createSpellInfo(spellId)
       if seen[tostring(test)] == nil then
         seen[tostring(test)] = 42
-        table.insert(tests, test)
+        table.insert(infos, test)
       end
     end
   end
@@ -342,10 +223,10 @@ local function createHitboxRangeTests()
     if sname then
       local _, _, _, _, minRange, maxRange, _ = GetSpellInfo(sid)
       if minRange ~= nil and maxRange ~= nil and minRange < maxRange then
-	test = createItem(id)
+	test = rangeLib.createItemInfo(id)
 	if seen[tostring(test)] == nil then
 	  seen[tostring(test)] = 42
-	  table.insert(tests, test)
+	  table.insert(infos, test)
 	end
       end
     end
@@ -355,21 +236,146 @@ local function createHitboxRangeTests()
     for toyId, id, name in toyBoxIter() do
       local sname, sid = GetItemSpell(id)
       if sname then
-	local _, _, _, _, minRange, maxRange, _, _ = GetSpellInfo(sid)
-	if minRange ~= nil and maxRange ~= nil and minRange < maxRange then
-	  test = createItem(id)
-	  if seen[tostring(test)] == nil then
-	    seen[tostring(test)] = 42
-	    table.insert(tests, test)
-	  end
-	end
+  	local _, _, _, _, minRange, maxRange, _, _ = GetSpellInfo(sid)
+  	if minRange ~= nil and maxRange ~= nil and minRange < maxRange then
+  	  test = rangeLib.createItemInfo(id)
+  	  if seen[tostring(test)] == nil then
+  	    seen[tostring(test)] = 42
+  	    table.insert(infos, test)
+  	  end
+  	end
       end
     end
   end
 
-  return tests
+  return infos
 end
-ngorangeCreateHitboxRangeTests = createHitboxRangeTests
-ngorangeCreateRange = createRange
-ngorangeCreateCentroidRangeTests = createCentroidRangeTests
-NGORANGEMAXRANGE = MAXRANGE
+
+rangeLib.createRangeEncoder = function(infos)
+  local intervals, thresholds = {}, {}
+  local set = {0}
+
+  for _, info in ipairs(infos) do
+    table.insert(set, info.minrange)
+    table.insert(set, info.maxrange)
+  end
+  set = toSortedSet(set)
+  table.insert(set, INF)
+
+  for i=1, #set do
+    thresholds[set[i]] = true
+  end
+  for i=1, #set - 1 do
+    table.insert(intervals, {start=set[i], stop=set[i + 1]})
+  end
+  intervals.decode = function(bitfield)
+    local bit_, prev, start
+    local ranges = {}
+
+    for i, interval in ipairs(intervals) do
+      bit_ = bit.band(bit.lshift(1, i), bitfield) ~= 0 and 1 or 0
+      if bit_ == 0 and prev == nil then
+	prev = 0
+      elseif bit_ == 1 and prev == nil then
+	start = i
+	prev = 1
+      elseif bit_ == 0 and prev == 0 then
+	prev = 0
+      elseif bit_ == 1 and prev == 0 then
+	start = i
+	prev = 1
+      elseif bit_ == 0 and prev == 1 then
+	table.insert(ranges, {start=intervals[start].start, stop=intervals[i - 1].stop})
+	prev = 0
+      elseif bit_ == 1 and prev == 1 then
+	prev = 1
+      else
+	assert(false)
+      end
+    end
+    if prev == 1 then
+      table.insert(ranges, {start=intervals[start].start, stop=intervals[#intervals].stop})
+    end
+    return ranges
+  end
+  intervals.bitfieldToString = function(bitfield)
+    local s, mask = 'bitfield:_'
+
+    for i, interval in ipairs(intervals) do
+      mask = bit.lshift(1, i)
+      if bit.band(mask, bitfield) ~= 0 then
+	s = s..'1'
+      else
+	s = s..'0'
+      end
+    end
+    for _, r in ipairs(intervals.decode(bitfield)) do
+      s = s..'('..r.start..'-'..r.stop..')'
+    end
+    return s
+  end
+  intervals.encode = function(start, stop)
+    local bitfield = 0
+
+    assert(thresholds[start] == true)
+    assert(thresholds[stop] == true)
+    for i, interval in ipairs(intervals) do
+      if interval.start >= start and interval.stop <= stop then
+	bitfield = bit.bor(bitfield, bit.lshift(1, i))
+      end
+    end
+    assert(bitfield ~= 0)
+    return bitfield
+  end
+
+  return intervals
+end
+
+rangeLib.createDumbReducer = function(infos, rangeEncoder)
+  local o = {}
+  local bitfieldPerInfo = {}
+
+  for _, info in ipairs(infos) do
+    bitfieldPerInfo[info] = rangeEncoder.encode(info.minrange, info.maxrange)
+  end
+  o.reduce = function(unit)
+    local r = bit.bnot(0)
+    local testCount = 0
+
+    for _, info in ipairs(infos) do
+      local bitfield = bitfieldPerInfo[info]
+      local intersection = bit.band(r, bitfield)
+      if intersection ~= 0 and intersection ~= r then
+	test = info.test(unit)
+	testCount = testCount + 1
+	if test == true then
+	  r = bit.band(r, bitfield)
+	elseif test == false then
+	  r = bit.band(r, bit.bnot(bitfield))
+	end
+	-- if test ~= nil then
+	--   print(rangeEncoder.bitfieldToString(r), rangeEncoder.bitfieldToString(bitfield), info);
+	-- end
+      end
+    end
+    return r, testCount
+  end
+  return o
+end
+
+function LOL()
+  print('********************************************************************************');
+
+  local infos = rangeLib.createHitboxRangeInfos()
+  local rangeEncoder = rangeLib.createRangeEncoder(infos)
+  -- infos = rangeLib.createCentroidRangeInfos()
+  local reducer = rangeLib.createDumbReducer(infos, rangeEncoder)
+
+  r, testCount = reducer.reduce("target")
+  print(rangeEncoder.bitfieldToString(r), '<===');
+
+  print('********************************************************************************');
+
+end
+
+_G['rangeLib'] = rangeLib
