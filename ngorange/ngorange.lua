@@ -1,15 +1,5 @@
 local MAXRANGE = 55
 
-local function clipRange(r)
-  local s = {}
-  for _, step in ipairs(r) do
-    if step.start < MAXRANGE then
-      table.insert(s, {start=step.start, stop=min(MAXRANGE, step.stop)})
-    end
-  end
-  return s
-end
-
 local function setupFrames(self)
   self:SetParent(UIParent);
   self:SetWidth(272);
@@ -243,10 +233,10 @@ local function closure()
     -- Triangulate faster with unitGUI (60sec event-based cache)
     -- Cluster tests by range
     -- Select the right test faster with unitName (60sec event-based cache)
-    moveCursor(self, clipRange(r))
+    moveCursor(self, rangeLib.clipRange(r, MAXRANGE))
 
     r, _ = centroidRangeReducer.reduce("target")
-    moveBg(self, clipRange(r))
+    moveBg(self, rangeLib.clipRange(r, MAXRANGE))
   end
 
   local function onEvent(_, event)

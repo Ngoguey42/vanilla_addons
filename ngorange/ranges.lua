@@ -5,7 +5,9 @@ local isClassic = select(4, GetBuildInfo()) < 30000
 local isRetail = not isClassic
 local INF = 1 / 0
 local rangeLib = {}
+_G['rangeLib'] = rangeLib
 
+-- Utils **************************************************************************************** **
 local function tribool(v)
   if v == nil then
     return nil
@@ -101,6 +103,17 @@ local function resetToyFilters()
   C_ToyBox.SetFilterString("")
 end
 
+rangeLib.clipRange = function(r, maxrange)
+  local s = {}
+  for _, step in ipairs(r) do
+    if step.start < maxrange then
+      table.insert(s, {start=step.start, stop=min(maxrange, step.stop)})
+    end
+  end
+  return s
+end
+
+-- Infos **************************************************************************************** **
 rangeLib.createSpellInfo = function(id)
   local name, _, _, _, minrange, maxrange, id, _ = GetSpellInfo(id)
   local o = {}
@@ -150,7 +163,6 @@ rangeLib.createUnitInRangeInfo = function()
     else
       return nil
     end
-    return t
   end
   local function str()
     return 'unitInRange@0-40y'
@@ -179,7 +191,6 @@ rangeLib.createInteractDistanceInfo = function(idx)
   o.name = names[idx]
   o.maxrange = maxranges[idx]
 
-
   o.test = function(unit)
     if UnitExists(unit) then
       return tribool(CheckInteractDistance(unit, idx))
@@ -202,6 +213,7 @@ rangeLib.createCentroidRangeInfos = function()
   }
 end
 
+-- Infos aggregators **************************************************************************** **
 rangeLib.createHitboxRangeInfos = function()
   local seen = {}
   local infos = {
@@ -232,7 +244,7 @@ rangeLib.createHitboxRangeInfos = function()
     end
   end
   if isRetail then
-    resetToyFilters()
+    resetToyFilters() -- /!\ Side effect
     for toyId, id, name in toyBoxIter() do
       local sname, sid = GetItemSpell(id)
       if sname then
@@ -251,7 +263,9 @@ rangeLib.createHitboxRangeInfos = function()
   return infos
 end
 
+-- Higher level abstractions ******************************************************************** **
 rangeLib.createRangeEncoder = function(infos)
+  -- This class lists the thesholds and defines a bitfield encoding where 1bit <=> 1interval
   local intervals, thresholds = {}, {}
   local set = {0}
 
@@ -332,6 +346,12 @@ rangeLib.createRangeEncoder = function(infos)
 end
 
 rangeLib.createDumbReducer = function(infos)
+  -- Reduce range tests in a -hopefuly- smart way.
+  -- Optimisations in this class:
+  -- - skipping of tests that would not refine the running range.
+  -- Downsides in this class:
+  -- - Most of the test return `nil`, but we keep calling those
+
   local o = {}
   local bitfieldPerInfo = {}
   local rangeEncoder = rangeLib.createRangeEncoder(infos)
@@ -346,7 +366,6 @@ rangeLib.createDumbReducer = function(infos)
     for _, info in ipairs(infos) do
       local bitfield = bitfieldPerInfo[info]
       local intersection = bit.band(r, bitfield)
-      -- if true then
       if intersection ~= 0 and intersection ~= r then
         test = info.test(unit)
         testCount = testCount + 1
@@ -360,11 +379,13 @@ rangeLib.createDumbReducer = function(infos)
         -- end
       end
     end
+    -- print(rangeEncoder.bitfieldToString(r), '<===', testCount);
     return rangeEncoder.decode(r), testCount
   end
   return o
 end
 
+-- Debug **************************************************************************************** **
 function LOL()
   print('********************************************************************************');
 
@@ -373,10 +394,7 @@ function LOL()
   local reducer = rangeLib.createDumbReducer(infos)
 
   r, testCount = reducer.reduce("target")
-  print(rangeEncoder.bitfieldToString(r), '<===');
 
   print('********************************************************************************');
 
 end
-
-_G['rangeLib'] = rangeLib
