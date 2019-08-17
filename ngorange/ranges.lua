@@ -223,11 +223,11 @@ rangeLib.createHitboxRangeInfos = function()
     if sname then
       local _, _, _, _, minRange, maxRange, _ = GetSpellInfo(sid)
       if minRange ~= nil and maxRange ~= nil and minRange < maxRange then
-	test = rangeLib.createItemInfo(id)
-	if seen[tostring(test)] == nil then
-	  seen[tostring(test)] = 42
-	  table.insert(infos, test)
-	end
+        test = rangeLib.createItemInfo(id)
+        if seen[tostring(test)] == nil then
+          seen[tostring(test)] = 42
+          table.insert(infos, test)
+        end
       end
     end
   end
@@ -236,14 +236,14 @@ rangeLib.createHitboxRangeInfos = function()
     for toyId, id, name in toyBoxIter() do
       local sname, sid = GetItemSpell(id)
       if sname then
-  	local _, _, _, _, minRange, maxRange, _, _ = GetSpellInfo(sid)
-  	if minRange ~= nil and maxRange ~= nil and minRange < maxRange then
-  	  test = rangeLib.createItemInfo(id)
-  	  if seen[tostring(test)] == nil then
-  	    seen[tostring(test)] = 42
-  	    table.insert(infos, test)
-  	  end
-  	end
+	local _, _, _, _, minRange, maxRange, _, _ = GetSpellInfo(sid)
+	if minRange ~= nil and maxRange ~= nil and minRange < maxRange then
+	  test = rangeLib.createItemInfo(id)
+	  if seen[tostring(test)] == nil then
+	    seen[tostring(test)] = 42
+	    table.insert(infos, test)
+	  end
+	end
       end
     end
   end
@@ -275,22 +275,22 @@ rangeLib.createRangeEncoder = function(infos)
     for i, interval in ipairs(intervals) do
       bit_ = bit.band(bit.lshift(1, i), bitfield) ~= 0 and 1 or 0
       if bit_ == 0 and prev == nil then
-	prev = 0
+        prev = 0
       elseif bit_ == 1 and prev == nil then
-	start = i
-	prev = 1
+        start = i
+        prev = 1
       elseif bit_ == 0 and prev == 0 then
-	prev = 0
+        prev = 0
       elseif bit_ == 1 and prev == 0 then
-	start = i
-	prev = 1
+        start = i
+        prev = 1
       elseif bit_ == 0 and prev == 1 then
-	table.insert(ranges, {start=intervals[start].start, stop=intervals[i - 1].stop})
-	prev = 0
+        table.insert(ranges, {start=intervals[start].start, stop=intervals[i - 1].stop})
+        prev = 0
       elseif bit_ == 1 and prev == 1 then
-	prev = 1
+        prev = 1
       else
-	assert(false)
+        assert(false)
       end
     end
     if prev == 1 then
@@ -304,9 +304,9 @@ rangeLib.createRangeEncoder = function(infos)
     for i, interval in ipairs(intervals) do
       mask = bit.lshift(1, i)
       if bit.band(mask, bitfield) ~= 0 then
-	s = s..'1'
+        s = s..'1'
       else
-	s = s..'0'
+        s = s..'0'
       end
     end
     for _, r in ipairs(intervals.decode(bitfield)) do
@@ -321,7 +321,7 @@ rangeLib.createRangeEncoder = function(infos)
     assert(thresholds[stop] == true)
     for i, interval in ipairs(intervals) do
       if interval.start >= start and interval.stop <= stop then
-	bitfield = bit.bor(bitfield, bit.lshift(1, i))
+        bitfield = bit.bor(bitfield, bit.lshift(1, i))
       end
     end
     assert(bitfield ~= 0)
@@ -331,9 +331,10 @@ rangeLib.createRangeEncoder = function(infos)
   return intervals
 end
 
-rangeLib.createDumbReducer = function(infos, rangeEncoder)
+rangeLib.createDumbReducer = function(infos)
   local o = {}
   local bitfieldPerInfo = {}
+  local rangeEncoder = rangeLib.createRangeEncoder(infos)
 
   for _, info in ipairs(infos) do
     bitfieldPerInfo[info] = rangeEncoder.encode(info.minrange, info.maxrange)
@@ -345,20 +346,21 @@ rangeLib.createDumbReducer = function(infos, rangeEncoder)
     for _, info in ipairs(infos) do
       local bitfield = bitfieldPerInfo[info]
       local intersection = bit.band(r, bitfield)
+      -- if true then
       if intersection ~= 0 and intersection ~= r then
-	test = info.test(unit)
-	testCount = testCount + 1
-	if test == true then
-	  r = bit.band(r, bitfield)
-	elseif test == false then
-	  r = bit.band(r, bit.bnot(bitfield))
-	end
-	-- if test ~= nil then
-	--   print(rangeEncoder.bitfieldToString(r), rangeEncoder.bitfieldToString(bitfield), info);
-	-- end
+        test = info.test(unit)
+        testCount = testCount + 1
+        if test == true then
+          r = bit.band(r, bitfield)
+        elseif test == false then
+          r = bit.band(r, bit.bnot(bitfield))
+        end
+        -- if test ~= nil then
+        --   print(rangeEncoder.bitfieldToString(r), rangeEncoder.bitfieldToString(bitfield), info);
+        -- end
       end
     end
-    return r, testCount
+    return rangeEncoder.decode(r), testCount
   end
   return o
 end
@@ -367,9 +369,8 @@ function LOL()
   print('********************************************************************************');
 
   local infos = rangeLib.createHitboxRangeInfos()
-  local rangeEncoder = rangeLib.createRangeEncoder(infos)
   -- infos = rangeLib.createCentroidRangeInfos()
-  local reducer = rangeLib.createDumbReducer(infos, rangeEncoder)
+  local reducer = rangeLib.createDumbReducer(infos)
 
   r, testCount = reducer.reduce("target")
   print(rangeEncoder.bitfieldToString(r), '<===');

@@ -1,3 +1,15 @@
+local MAXRANGE = 55
+
+local function clipRange(r)
+  local s = {}
+  for _, step in ipairs(r) do
+    if step.start < MAXRANGE then
+      table.insert(s, {start=step.start, stop=min(MAXRANGE, step.stop)})
+    end
+  end
+  return s
+end
+
 local function setupFrames(self)
   self:SetParent(UIParent);
   self:SetWidth(272);
@@ -31,8 +43,8 @@ local function setupFrames(self)
   self.bar.texture0 = self.bar:CreateTexture()
   self.bar.texture0:SetColorTexture(r, g, b)
   self.bar.texture0:SetGradientAlpha("HORIZONTAL",
-				     1, 1, 1, a0,
-				     1, 1, 1, a1)
+                                     1, 1, 1, a0,
+                                     1, 1, 1, a1)
   self.bar.texture0:SetAlpha(1)
 
   self.bar.texture1 = self.bar:CreateTexture()
@@ -42,8 +54,8 @@ local function setupFrames(self)
   self.bar.texture2 = self.bar:CreateTexture()
   self.bar.texture2:SetColorTexture(r, g, b)
   self.bar.texture2:SetGradientAlpha("HORIZONTAL",
-				     1, 1, 1, a1,
-				     1, 1, 1, a0)
+                                     1, 1, 1, a1,
+                                     1, 1, 1, a0)
   self.bar.texture2:SetAlpha(1)
 
   self.cursors = {}
@@ -57,7 +69,7 @@ local function setupFrames(self)
     cursor:SetPoint("TOPLEFT", self.bar, "TOPLEFT", 0, 8)
     cursor:SetBackdrop({
         edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
-	edgeSize = 15,
+        edgeSize = 15,
     })
     cursor:SetHeight(18);
     cursor:SetAlpha(1);
@@ -80,8 +92,8 @@ function moveBg(self, range)
   local totalWidth = self:GetWidth() - barBorderW * 2
   local o = range[1]
 
-  left = o.start / NGORANGEMAXRANGE * totalWidth
-  right = o.stop / NGORANGEMAXRANGE * totalWidth
+  left = o.start / MAXRANGE * totalWidth
+  right = o.stop / MAXRANGE * totalWidth
   middle = (left + right) / 2
   width = right - left
 
@@ -96,19 +108,19 @@ function moveBg(self, range)
   middle = (left + right) / 2
 
   self.bar.texture0:SetPoint("BOTTOMLEFT", self.bar, "BOTTOMLEFT",
-			     barBorderW, barBorderH - 1)
+                             barBorderW, barBorderH - 1)
   self.bar.texture0:SetPoint("TOPRIGHT", self.bar, "TOPLEFT",
-			       barBorderW + left, -barBorderH)
+                             barBorderW + left, -barBorderH)
 
   self.bar.texture1:SetPoint("BOTTOMLEFT", self.bar, "BOTTOMLEFT",
-			     barBorderW + left, barBorderH - 1)
+                             barBorderW + left, barBorderH - 1)
   self.bar.texture1:SetPoint("TOPRIGHT", self.bar, "TOPLEFT",
-			     barBorderW + right, -barBorderH)
+                             barBorderW + right, -barBorderH)
 
   self.bar.texture2:SetPoint("BOTTOMLEFT", self.bar, "BOTTOMLEFT",
-			     barBorderW + right, barBorderH - 1)
+                             barBorderW + right, barBorderH - 1)
   self.bar.texture2:SetPoint("TOPRIGHT", self.bar, "TOPRIGHT",
-			       -barBorderW, -barBorderH)
+                               -barBorderW, -barBorderH)
 
 end
 
@@ -122,8 +134,8 @@ function moveCursor(self, range)
     -- TODO: Should the full range be shown?
     --       Is it always a good idea? (UX speaking)
 
-    left = o.start / NGORANGEMAXRANGE * totalWidth
-    right = o.stop / NGORANGEMAXRANGE * totalWidth
+    left = o.start / MAXRANGE * totalWidth
+    right = o.stop / MAXRANGE * totalWidth
     middle = (left + right) / 2
     width = right - left
 
@@ -177,12 +189,15 @@ end
 local function closure()
   local self
   local has_target = UnitExists("target")
-  local range_tests
-  local centroidRangeTests = ngorangeCreateCentroidRangeTests()
+  local hitboxRangeInfos
+  local hitboxRangeReducer
+  local centroidRangeReducer = rangeLib.createDumbReducer(rangeLib.createCentroidRangeInfos())
+  local timeAcc, testAcc, updateAcc, startTime = 0, 0, 0
 
   local function primeTests()
-    if range_tests == nil then
-      range_tests = ngorangeCreateHitboxRangeTests() -- no spellbook in PLAYER_ENTERING_WORLD
+    if hitboxRangeReducer == nil then
+      hitboxRangeInfos = rangeLib.createHitboxRangeInfos()
+      hitboxRangeReducer = rangeLib.createDumbReducer(hitboxRangeInfos)
     end
   end
 
@@ -197,35 +212,41 @@ local function closure()
       end
     else
       help()
+      if startTime ~= nil then
+        timeAcc = timeAcc + GetTime() - startTime
+        startTime = GetTime()
+      end
+      if timeAcc > 0 then
+        print('|');
+        print(string.format('| Tracking time %.1fsec, update count %d, test count %d, test/update %.1f, test/sec %.1f',
+                            timeAcc, updateAcc, testAcc, testAcc / updateAcc, testAcc / timeAcc));
+      end
     end
   end
 
   local function onUpdate()
     -- TODO: Refresh rate
-    local s, r
     if not has_target then
       return
     end
-    assert(range_tests ~= nil)
-    r = ngorangeCreateRange()
-    for k, v in ipairs(range_tests) do
-      -- When using toys now: ~14k tests per second (~230 tests per update)
-      -- ~57k tests per second will get the fps down to 25 from 60
-      -- The code currently can't be used for a full party tracking
+    local r, count = hitboxRangeReducer.reduce("target")
+    updateAcc = updateAcc + 1
+    testAcc = testAcc + count
+    -- When using toys now: ~14k tests per second (~230 tests per update)
+    -- ~57k tests per second will get the fps down to 25 from 60
+    -- The code currently can't be used for a full party tracking
 
-      -- TODO: Perform test only if it may refine `r`
-      -- TODO: Dynamically order tests with an heuristic
-      s = v()
-      r = r * s
-    end
-    moveCursor(self, r)
+    -- TODO: Perform test only if it may refine `r`
+    -- TODO: Dynamically order tests with an heuristic
 
-    r = ngorangeCreateRange()
-    for k, v in ipairs(centroidRangeTests) do
-      s = v()
-      r = r * s
-    end
-    moveBg(self, r)
+    -- Triangulation
+    -- Triangulate faster with unitGUI (60sec event-based cache)
+    -- Cluster tests by range
+    -- Select the right test faster with unitName (60sec event-based cache)
+    moveCursor(self, clipRange(r))
+
+    r, _ = centroidRangeReducer.reduce("target")
+    moveBg(self, clipRange(r))
   end
 
   local function onEvent(_, event)
@@ -240,13 +261,16 @@ local function closure()
         for _, cursor in ipairs(self.cursors) do
           cursor:Hide()
         end
-	self.bar.texture0:Hide()
-	self.bar.texture1:Hide()
-	self.bar.texture2:Hide()
+        self.bar.texture0:Hide()
+        self.bar.texture1:Hide()
+        self.bar.texture2:Hide()
+        timeAcc = timeAcc + GetTime() - startTime
+        startTime = nil
       else
-	self.bar.texture0:Show()
-	self.bar.texture1:Show()
-	self.bar.texture2:Show()
+        self.bar.texture0:Show()
+        self.bar.texture1:Show()
+        self.bar.texture2:Show()
+        startTime = GetTime()
       end
     end
   end
@@ -262,20 +286,18 @@ local function closure()
     print("Welcome to ngorange. Commands: `/ngorange help`, `/ngorange show`, `/ngorange reset`.");
   end
 
-  function LOL() -- global for debug
+  function LOLl() -- global for debug
     print("********************");
     primeTests()
-
-    r = ngorangeCreateRange()
-    for k, v in ipairs(range_tests) do
-      s = v()
-      r = r * s
-      print(v, s, r);
-    end
-    moveCursor(self, r)
   end
 
   return onLoad, onSlash
+end
+
+function tablelength(T)
+  local count = 0
+  for _ in pairs(T) do count = count + 1 end
+  return count
 end
 
 ngorangeOnLoad, ngorangeOnSlash = closure()
