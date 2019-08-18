@@ -361,7 +361,7 @@ rangeLib.createDumbReducer = function(infos)
   end
   o.reduce = function(unit)
     local r = bit.bnot(0)
-    local testCount = 0
+    local testCount, uselessTestCount = 0, 0
 
     for _, info in ipairs(infos) do
       local bitfield = bitfieldPerInfo[info]
@@ -373,6 +373,8 @@ rangeLib.createDumbReducer = function(infos)
           r = bit.band(r, bitfield)
         elseif test == false then
           r = bit.band(r, bit.bnot(bitfield))
+	else
+	  uselessTestCount = uselessTestCount + 1
         end
         -- if test ~= nil then
         --   print(rangeEncoder.bitfieldToString(r), rangeEncoder.bitfieldToString(bitfield), info);
@@ -380,7 +382,7 @@ rangeLib.createDumbReducer = function(infos)
       end
     end
     -- print(rangeEncoder.bitfieldToString(r), '<===', testCount);
-    return rangeEncoder.decode(r), testCount
+    return rangeEncoder.decode(r), testCount, uselessTestCount
   end
   return o
 end

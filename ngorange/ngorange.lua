@@ -182,7 +182,7 @@ local function closure()
   local hitboxRangeInfos
   local hitboxRangeReducer
   local centroidRangeReducer = rangeLib.createDumbReducer(rangeLib.createCentroidRangeInfos())
-  local timeAcc, testAcc, updateAcc, startTime = 0, 0, 0
+  local timeAcc, testAcc, uselessTestAcc, updateAcc, startTime = 0, 0, 0, 0
 
   local function primeTests()
     if hitboxRangeReducer == nil then
@@ -206,36 +206,42 @@ local function closure()
         timeAcc = timeAcc + GetTime() - startTime
         startTime = GetTime()
       end
-      if timeAcc > 0 then
+      if testAcc > 0 then
         print('|');
-        print(string.format('| Tracking time %.1fsec, update count %d, test count %d, test/update %.1f, test/sec %.1f',
-                            timeAcc, updateAcc, testAcc, testAcc / updateAcc, testAcc / timeAcc));
+	fmt = ('| Tracking time %.1fsec, update count %d, '..
+	       'test count %d, useless-test count %d(%.0f%%), '..
+	       'test/update %.1f, test/sec %.1f, update/sec %.1f')
+        print(string.format(fmt, timeAcc, updateAcc,
+			    testAcc, uselessTestAcc, uselessTestAcc / testAcc * 100,
+			    testAcc / updateAcc, testAcc / timeAcc, updateAcc / timeAcc));
       end
     end
   end
 
   local function onUpdate()
-    -- TODO: Refresh rate
     if not has_target then
       return
     end
-    local r, count = hitboxRangeReducer.reduce("target")
-    updateAcc = updateAcc + 1
-    testAcc = testAcc + count
     -- When using toys now: ~14k tests per second (~230 tests per update)
     -- ~57k tests per second will get the fps down to 25 from 60
     -- The code currently can't be used for a full party tracking
 
     -- TODO: Perform test only if it may refine `r`
     -- TODO: Dynamically order tests with an heuristic
+    -- TODO: Refresh rate
 
     -- Triangulation
     -- Triangulate faster with unitGUI (60sec event-based cache)
     -- Cluster tests by range
     -- Select the right test faster with unitName (60sec event-based cache)
+
+    local r, count, countUseless = hitboxRangeReducer.reduce("target")
+    updateAcc = updateAcc + 1
+    testAcc = testAcc + count
+    uselessTestAcc = uselessTestAcc + countUseless
     moveCursor(self, rangeLib.clipRange(r, MAXRANGE))
 
-    r, _ = centroidRangeReducer.reduce("target")
+    r, _, _ = centroidRangeReducer.reduce("target")
     moveBg(self, rangeLib.clipRange(r, MAXRANGE))
   end
 
