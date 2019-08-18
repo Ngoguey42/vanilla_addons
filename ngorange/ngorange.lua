@@ -184,36 +184,36 @@ local function closure()
   local centroidRangeReducer = rangeLib.createDumbReducer(rangeLib.createCentroidRangeInfos())
   local timeAcc, testAcc, uselessTestAcc, updateAcc, startTime = 0, 0, 0, 0
 
-  local function primeTests()
-    if hitboxRangeReducer == nil then
+  local function primeTests(force)
+    if hitboxRangeReducer == nil or force == true then
       hitboxRangeInfos = rangeLib.createHitboxRangeInfos()
-      hitboxRangeReducer = rangeLib.createDumbReducer(hitboxRangeInfos)
+      hitboxRangeReducer = rangeLib.createReducer2(hitboxRangeInfos)
     end
   end
 
   local function onSlash(msg)
     primeTests()
     if msg == 'reset' then
-      print('ngorange range tests reset');
-      range_tests = ngorangeCreateHitboxRangeTests()
+      print('ngorange tests reset');
+      primeTests(true)
     elseif msg == 'show' then
-      for k, v in ipairs(range_tests) do
+      for k, v in ipairs(hitboxRangeInfos) do
         print('->', v);
       end
-    else
-      help()
+    elseif msg == 'stats' then
       if startTime ~= nil then
         timeAcc = timeAcc + GetTime() - startTime
         startTime = GetTime()
       end
       if testAcc > 0 then
-        print('|');
 	fmt = ('| Tracking time %.1fsec, update count %d, '..
 	       'test count %d, useless-test count %d(%.0f%%), '..
 	       'test/update %.1f, test/sec %.1f, update/sec %.1f')
         print(string.format(fmt, timeAcc, updateAcc,
 			    testAcc, uselessTestAcc, uselessTestAcc / testAcc * 100,
 			    testAcc / updateAcc, testAcc / timeAcc, updateAcc / timeAcc));
+    else
+      help()
       end
     end
   end

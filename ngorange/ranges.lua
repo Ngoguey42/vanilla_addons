@@ -8,6 +8,15 @@ local rangeLib = {}
 _G['rangeLib'] = rangeLib
 
 -- Utils **************************************************************************************** **
+local function shuffleTable(tbl)
+  for i = #tbl, 2, -1 do
+    local j = math.random(i)
+    -- print('shuffle', i, j);
+    tbl[i], tbl[j] = tbl[j], tbl[i]
+  end
+  return tbl
+end
+
 local function tribool(v)
   if v == nil then
     return nil
@@ -382,6 +391,105 @@ rangeLib.createDumbReducer = function(infos)
       end
     end
     -- print(rangeEncoder.bitfieldToString(r), '<===', testCount);
+    return rangeEncoder.decode(r), testCount, uselessTestCount
+  end
+  return o
+end
+
+rangeLib.createReducer2 = function(infos)
+  -- The longer the `maxCacheAge`:
+  -- - the longer the `gc` phases
+  -- - the shorter the `test` phases
+  local minGCDistance = 5
+  local maxCacheAge = 30
+
+  local o = {}
+  local bitfieldPerInfo = {}
+  local rangeEncoder = rangeLib.createRangeEncoder(infos)
+  local cachePerGuid = {}
+  local lastGC = GetTime()
+
+  for _, info in ipairs(infos) do
+    bitfieldPerInfo[info] = rangeEncoder.encode(info.minrange, info.maxrange)
+  end
+
+  local function gc(timeout)
+    print('-- gc');
+    local toremove = {}
+
+    for guid, cache in pairs(cachePerGuid) do
+      print('  on', guid);
+      for i, _ in pairs(cache.oldUsefullIndices) do -- debug
+      	print('    ', i, infos[i]);
+      end
+
+      if cache.time < timeout then
+	table.insert(toremove, guid)
+      end
+    end
+    for _, guid in ipairs(toremove) do
+      print('-- Cache rm_', guid);
+      cachePerGuid[guid] = nil
+    end
+  end
+
+  o.reduce = function(unit)
+    local r = bit.bnot(0)
+    local testCount, uselessTestCount = 0, 0
+    local guid = UnitGUID(unit)
+    local cache = cachePerGuid[guid]
+    local now = GetTime()
+    local newUsefullIndices = {}
+
+    if cache == nil then
+      print("-- Cache add", guid);
+      cache = {oldUsefullIndices={}}
+      cachePerGuid[guid] = cache
+    end
+    cache.time = now
+
+    local function testIndex(i)
+      local info = infos[i]
+      local bitfield = bitfieldPerInfo[info]
+      local intersection = bit.band(r, bitfield)
+      if intersection ~= 0 and intersection ~= r then
+        test = info.test(unit)
+        testCount = testCount + 1
+	if test == nil then
+	  -- print('Useless test on', info);
+	  uselessTestCount = uselessTestCount + 1
+	else
+	  -- print('  ', i, infos[i]);
+	  newUsefullIndices[i] = 42
+	  if test == true then
+	    r = bit.band(r, bitfield)
+	  else
+	    r = bit.band(r, bit.bnot(bitfield))
+	  end
+        end
+      end
+    end
+
+    -- print('case1');
+    for i, _ in pairs(cache.oldUsefullIndices) do
+      testIndex(i)
+    end
+    -- print('case2');
+    for i=1, #infos do
+      if cache.oldUsefullIndices[i] == nil then
+    	testIndex(i)
+      end
+    end
+    -- for i=1, #infos do
+    --   testIndex(i)
+    -- end
+
+    cache.oldUsefullIndices = shuffleTable(newUsefullIndices)
+
+    if now - lastGC > minGCDistance then
+      gc(now - maxCacheAge)
+      lastGC = now
+    end
     return rangeEncoder.decode(r), testCount, uselessTestCount
   end
   return o
