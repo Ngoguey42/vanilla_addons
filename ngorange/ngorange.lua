@@ -165,15 +165,52 @@ local function help()
   print('| - Is the item in range (works with all items in your bags that can be casted on a target)');
   print('| - Is the toy in range (works on wow-retail with all toys (not just the ones you own) that can be casted on a target)');
   print('| - Is your target close enough to be healed (40 yards) (works with all units in party/raid)');
-  print("| The red background tracks the distance to the target's center using those informations:");
+  print("| The red background track the distance to the target's center using those informations:");
   print('| - Is your target close enough to be followed (28 yards) (works with all units)');
   print('| - Is your target close enough to be duelled with (10 yards) (works with all units)');
   print('|  ');
   print('| /ngorange help -> Print this message');
   print('| /ngorange reset -> Reset the spells and items monitored (useful when new spells or new items)');
   print("| /ngorange show -> Show what is monitored to approximate the target's hitbox distance");
+  print("| /ngorange stats -> Show how many range-tests were performed so far");
   print('|  ');
   print('| Developped by ngo in august-2019 on wow-classic 1.13 and wow-retail 8.2.');
+end
+
+local function createStatsWatcher()
+  local o = {}
+  local timeAcc, testAcc, uselessTestAcc, updateAcc, startTime = 0, 0, 0, 0, nil
+
+  o.onUpdate = function(count, countUseless)
+    updateAcc = updateAcc + 1
+    testAcc = testAcc + count
+    uselessTestAcc = uselessTestAcc + countUseless
+  end
+  o.onStart = function()
+    startTime = GetTime()
+  end
+  o.onStop = function()
+    timeAcc = timeAcc + GetTime() - startTime
+    startTime = nil
+  end
+  o.print = function()
+    if startTime ~= nil then
+      timeAcc = timeAcc + GetTime() - startTime
+      startTime = GetTime()
+    end
+    if testAcc > 0 then
+      fmt = ('| Range tracking duration %.1fsec, update count %d, \n'..
+	       'test count %d, useless-test count %d(%.0f%%), \n'..
+	       'test/update %.1f, test/sec %.1f, update/sec %.1f')
+      print(string.format(fmt, timeAcc, updateAcc,
+			  testAcc, uselessTestAcc, uselessTestAcc / testAcc * 100,
+			  testAcc / updateAcc, testAcc / timeAcc, updateAcc / timeAcc));
+    else
+      print("Nothing to show yet");
+    end
+  end
+
+  return o
 end
 
 local function closure()
@@ -181,13 +218,15 @@ local function closure()
   local has_target = UnitExists("target")
   local hitboxRangeInfos
   local hitboxRangeReducer
-  local centroidRangeReducer = rangeLib.createDumbReducer(rangeLib.createCentroidRangeInfos())
-  local timeAcc, testAcc, uselessTestAcc, updateAcc, startTime = 0, 0, 0, 0
+  local centroidRangeReducer = rangeLib.createReducer(rangeLib.createCentroidRangeInfos())
+  local minDistanceBetweenUpdates = 1 / 30
+  local lastUpdate = GetTime()
+  local sw = createStatsWatcher()
 
   local function primeTests(force)
     if hitboxRangeReducer == nil or force == true then
       hitboxRangeInfos = rangeLib.createHitboxRangeInfos()
-      hitboxRangeReducer = rangeLib.createReducer2(hitboxRangeInfos)
+      hitboxRangeReducer = rangeLib.createReducerWithGUIDCache(hitboxRangeInfos)
     end
   end
 
@@ -201,20 +240,9 @@ local function closure()
         print('->', v);
       end
     elseif msg == 'stats' then
-      if startTime ~= nil then
-        timeAcc = timeAcc + GetTime() - startTime
-        startTime = GetTime()
-      end
-      if testAcc > 0 then
-	fmt = ('| Tracking time %.1fsec, update count %d, '..
-	       'test count %d, useless-test count %d(%.0f%%), '..
-	       'test/update %.1f, test/sec %.1f, update/sec %.1f')
-        print(string.format(fmt, timeAcc, updateAcc,
-			    testAcc, uselessTestAcc, uselessTestAcc / testAcc * 100,
-			    testAcc / updateAcc, testAcc / timeAcc, updateAcc / timeAcc));
+      sw.print()
     else
       help()
-      end
     end
   end
 
@@ -222,24 +250,20 @@ local function closure()
     if not has_target then
       return
     end
-    -- When using toys now: ~14k tests per second (~230 tests per update)
+    local now = GetTime()
+    if now - lastUpdate < minDistanceBetweenUpdates then
+      return
+    end
+    lastUpdate = now
     -- ~57k tests per second will get the fps down to 25 from 60
-    -- The code currently can't be used for a full party tracking
-
-    -- TODO: Perform test only if it may refine `r`
-    -- TODO: Dynamically order tests with an heuristic
-    -- TODO: Refresh rate
-
-    -- Triangulation
-    -- Triangulate faster with unitGUI (60sec event-based cache)
-    -- Cluster tests by range
-    -- Select the right test faster with unitName (60sec event-based cache)
+    -- V0.4.0 (using toys)
+    -- ~14000 test/second (~230 test/update)
+    -- V0.5.0 (opti and update rate limitation)
+    -- ~250 test/sec (~9 test/update)
 
     local r, count, countUseless = hitboxRangeReducer.reduce("target")
-    updateAcc = updateAcc + 1
-    testAcc = testAcc + count
-    uselessTestAcc = uselessTestAcc + countUseless
     moveCursor(self, rangeLib.clipRange(r, MAXRANGE))
+    sw.onUpdate(count, countUseless)
 
     r, _, _ = centroidRangeReducer.reduce("target")
     moveBg(self, rangeLib.clipRange(r, MAXRANGE))
@@ -260,13 +284,12 @@ local function closure()
         self.bar.texture0:Hide()
         self.bar.texture1:Hide()
         self.bar.texture2:Hide()
-        timeAcc = timeAcc + GetTime() - startTime
-        startTime = nil
+	sw.onStop()
       else
         self.bar.texture0:Show()
         self.bar.texture1:Show()
         self.bar.texture2:Show()
-        startTime = GetTime()
+	sw.onStart()
       end
     end
   end
@@ -282,7 +305,7 @@ local function closure()
     print("Welcome to ngorange. Commands: `/ngorange help`, `/ngorange show`, `/ngorange reset`.");
   end
 
-  function LOLl() -- global for debug
+  function LOL() -- global for debug
     print("********************");
     primeTests()
   end

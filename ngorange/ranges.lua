@@ -1,6 +1,8 @@
 -- Beware, the ranges from `CheckInteractDistance` are ranges to the center of the target
 -- the ranges from the spells are ranges to the side of the target. Those can't be mixed up
 
+-- TODO: Rename `info` to `tests` or something else
+
 local isClassic = select(4, GetBuildInfo()) < 30000
 local isRetail = not isClassic
 local INF = 1 / 0
@@ -8,15 +10,6 @@ local rangeLib = {}
 _G['rangeLib'] = rangeLib
 
 -- Utils **************************************************************************************** **
-local function shuffleTable(tbl)
-  for i = #tbl, 2, -1 do
-    local j = math.random(i)
-    -- print('shuffle', i, j);
-    tbl[i], tbl[j] = tbl[j], tbl[i]
-  end
-  return tbl
-end
-
 local function tribool(v)
   if v == nil then
     return nil
@@ -215,6 +208,7 @@ rangeLib.createInteractDistanceInfo = function(idx)
   return o
 end
 
+-- Infos aggregators **************************************************************************** **
 rangeLib.createCentroidRangeInfos = function()
   return {
     rangeLib.createInteractDistanceInfo(2),
@@ -222,7 +216,6 @@ rangeLib.createCentroidRangeInfos = function()
   }
 end
 
--- Infos aggregators **************************************************************************** **
 rangeLib.createHitboxRangeInfos = function()
   local seen = {}
   local infos = {
@@ -275,6 +268,8 @@ end
 -- Higher level abstractions ******************************************************************** **
 rangeLib.createRangeEncoder = function(infos)
   -- This class lists the thesholds and defines a bitfield encoding where 1bit <=> 1interval
+  -- The very first bit is currently unused (since lua indexes from 1 and that i'm lazy)
+  -- If more intervals than bits, undefined behavior!
   local intervals, thresholds = {}, {}
   local set = {0}
 
@@ -354,7 +349,7 @@ rangeLib.createRangeEncoder = function(infos)
   return intervals
 end
 
-rangeLib.createDumbReducer = function(infos)
+rangeLib.createReducer = function(infos)
   -- Reduce range tests in a -hopefuly- smart way.
   -- Optimisations in this class:
   -- - skipping of tests that would not refine the running range.
@@ -385,21 +380,27 @@ rangeLib.createDumbReducer = function(infos)
 	else
 	  uselessTestCount = uselessTestCount + 1
         end
-        -- if test ~= nil then
-        --   print(rangeEncoder.bitfieldToString(r), rangeEncoder.bitfieldToString(bitfield), info);
-        -- end
       end
     end
-    -- print(rangeEncoder.bitfieldToString(r), '<===', testCount);
     return rangeEncoder.decode(r), testCount, uselessTestCount
   end
   return o
 end
 
-rangeLib.createReducer2 = function(infos)
+rangeLib.createReducerWithGUIDCache = function(infos)
+  -- Reduce range tests in a -hopefuly- smart way.
+  -- Optimisations in this class:
+  -- - remember which tests were successful on the previous reduction
+  -- Downsides in this class:
+  -- - Two hyperparameters associated with a garbage collection
+  -- - No filtering of successful tests, only 2 (or 1) tests should be remembered
+  -- - Still masses of useless tests since some are considered potential improvements
+  -- Ideas for improvements:
+  -- - Cluster tests by `range`
+
   -- The longer the `maxCacheAge`:
   -- - the longer the `gc` phases
-  -- - the shorter the `test` phases
+  -- - the less range tests
   local minGCDistance = 5
   local maxCacheAge = 30
 
@@ -414,21 +415,14 @@ rangeLib.createReducer2 = function(infos)
   end
 
   local function gc(timeout)
-    print('-- gc');
     local toremove = {}
 
     for guid, cache in pairs(cachePerGuid) do
-      print('  on', guid);
-      for i, _ in pairs(cache.oldUsefullIndices) do -- debug
-      	print('    ', i, infos[i]);
-      end
-
       if cache.time < timeout then
 	table.insert(toremove, guid)
       end
     end
     for _, guid in ipairs(toremove) do
-      print('-- Cache rm_', guid);
       cachePerGuid[guid] = nil
     end
   end
@@ -437,17 +431,19 @@ rangeLib.createReducer2 = function(infos)
     local r = bit.bnot(0)
     local testCount, uselessTestCount = 0, 0
     local guid = UnitGUID(unit)
-    local cache = cachePerGuid[guid]
+    local cache
     local now = GetTime()
     local newUsefullIndices = {}
 
+    -- Step0: Load or create cache
+    cache = cachePerGuid[guid]
     if cache == nil then
-      print("-- Cache add", guid);
       cache = {oldUsefullIndices={}}
       cachePerGuid[guid] = cache
     end
     cache.time = now
 
+    -- Step1: Perform tests
     local function testIndex(i)
       local info = infos[i]
       local bitfield = bitfieldPerInfo[info]
@@ -456,10 +452,8 @@ rangeLib.createReducer2 = function(infos)
         test = info.test(unit)
         testCount = testCount + 1
 	if test == nil then
-	  -- print('Useless test on', info);
 	  uselessTestCount = uselessTestCount + 1
 	else
-	  -- print('  ', i, infos[i]);
 	  newUsefullIndices[i] = 42
 	  if test == true then
 	    r = bit.band(r, bitfield)
@@ -469,23 +463,17 @@ rangeLib.createReducer2 = function(infos)
         end
       end
     end
-
-    -- print('case1');
     for i, _ in pairs(cache.oldUsefullIndices) do
       testIndex(i)
     end
-    -- print('case2');
     for i=1, #infos do
       if cache.oldUsefullIndices[i] == nil then
     	testIndex(i)
       end
     end
-    -- for i=1, #infos do
-    --   testIndex(i)
-    -- end
+    cache.oldUsefullIndices = newUsefullIndices
 
-    cache.oldUsefullIndices = shuffleTable(newUsefullIndices)
-
+    -- Step3: GC
     if now - lastGC > minGCDistance then
       gc(now - maxCacheAge)
       lastGC = now
@@ -496,7 +484,7 @@ rangeLib.createReducer2 = function(infos)
 end
 
 -- Debug **************************************************************************************** **
-function LOL()
+function LOLi()
   print('********************************************************************************');
 
   local infos = rangeLib.createHitboxRangeInfos()
